@@ -346,6 +346,18 @@ public sealed class UnitySaveService : IDisposable
         payload.Remove("save_id");
         payload.Remove("slot_id");
         payload["checkpoint_id"] = checkpointId;
+        // 日程物理字段只来自 Unity 当前运行时存档；未知动态事实不伪造可用性。
+        payload["npc_schedule_physical_state"] = new JObject
+        {
+            ["snapshot_id"] = $"world_{currentTime.day}_{currentTime.hour}_{currentTime.minute}_{Guid.NewGuid():N}",
+            ["time_revision"] = data.world_revision,
+            ["world_revision"] = data.world_revision,
+            ["game_time"] = JObject.FromObject(currentTime),
+            ["weather"] = data.weather ?? "unknown",
+            ["locations"] = new JArray(),
+            ["spots"] = new JArray(),
+            ["npcs"] = payload["npcs"] ?? new JArray()
+        };
         _webSocket.Send(_webSocket.Protocol.CreateEnvelope(
             "world_snapshot",
             $"req_{Guid.NewGuid():N}",

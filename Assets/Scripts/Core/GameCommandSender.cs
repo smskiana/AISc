@@ -373,6 +373,8 @@ public class GameCommandSender
         public string[] participant_ids;
         public GameTime game_time;
         public long world_revision;
+        public string snapshot_id;
+        public long time_revision;
         public long base_schedule_revision;
         public System.Collections.Generic.List<NpcDailyScheduleItem> remaining_schedule;
         public NpcState physical_state;

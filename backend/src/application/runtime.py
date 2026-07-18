@@ -22,6 +22,7 @@ from ..npc.player_impression_refresh import PlayerImpressionRefresher
 from ..npc.state_manager import StateManager
 from ..npc.social_session import NpcSocialContentService
 from ..npc.social_decision import NpcSocialDecisionService, SocialDecisionRequest
+from ..npc.schedule_world_snapshot import ScheduleWorldSnapshot, ScheduleWorldSnapshotStore
 from ..protocol.codec import DecodedMessage
 from ..protocol.session import ProtocolSession
 from ..save.manager import SaveManager
@@ -47,6 +48,7 @@ class GameRuntime:
         self.world_preparation: WorldPreparationCoordinator | None = None
         self.midnight_coordinator: MidnightCoordinator | None = None
         self.social_decisions: NpcSocialDecisionService | None = None
+        self.schedule_snapshots = ScheduleWorldSnapshotStore()
 
     def require_services(self) -> AppServices:
         if self.services is None:
@@ -110,6 +112,7 @@ class GameRuntime:
         )
         behavior.set_state_manager(state_mgr)
         behavior.set_ws_sender(self.message_bus.broadcast)
+        behavior.schedule_snapshot_store = self.schedule_snapshots
         self.social_decisions = NpcSocialDecisionService(
             lambda request: self._decide_social_semantics(behavior, request)
         )
@@ -235,7 +238,7 @@ class GameRuntime:
 
         if msg_type == "NPC_SCHEDULE_REPLAN_REQUEST":
             try:
-                await ws.send_json(await self.require_services().behavior.replan_from_unity_request(msg))
+                await ws.send_json(await self.require_services().behavior.replan_from_unity_request(msg, self.schedule_snapshots))
             except Exception as error:
                 logger.warning("日程重规划被拒绝: %s", type(error).__name__)
                 await ws.send_json({
@@ -349,6 +352,9 @@ class GameRuntime:
         if msg.get("type") == "world_snapshot":
             try:
                 self._apply_world_snapshot(msg)
+                schedule_payload = msg.get("npc_schedule_physical_state")
+                if schedule_payload is not None:
+                    self.schedule_snapshots.put(ScheduleWorldSnapshot.from_dict(schedule_payload))
                 await ws.send_json(session.response(
                     "world_snapshot_applied",
                     {"world_revision": int(msg.get("world_revision") or 0)},

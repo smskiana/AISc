@@ -111,6 +111,7 @@ class BehaviorEngine:
         self._planning_day: int = 0
         self._prepared_days: set[int] = set()
         self._daily_plan_lock = asyncio.Lock()
+        self.schedule_snapshot_store = None
 
         # 日计划 Prompt
         self.PLAN_PROMPT = """你是 {name}，{age}岁，{occupation}。
@@ -188,7 +189,7 @@ class BehaviorEngine:
                 return mgr.is_npc_busy(npc_id)
         return False
 
-    async def replan_from_unity_request(self, payload: dict) -> dict:
+    async def replan_from_unity_request(self, payload: dict, snapshot_store=None) -> dict:
         """仅按 Unity 权威剩余计划和冻结快照生成一个可整体替换的重规划结果。"""
         game_time = GameTimeSnapshot.from_dict(payload.get("game_time") or {})
         npc_id = str(payload.get("npc_id") or "")
@@ -212,11 +213,12 @@ class BehaviorEngine:
             )
             for item in (payload.get("remaining_schedule") or [])
         )
+        snapshot = snapshot_store.require(str(payload.get("snapshot_id") or ""), int(payload.get("time_revision", -1)), int(payload.get("world_revision", -1))) if snapshot_store else None
         owner = NpcScheduleRequest(
             npc_id=npc_id,
             profile=self._load_npc_profile(npc_id),
             routines=tuple(self._routines.get(npc_id, ())),
-            physical_state=dict(payload.get("physical_state") or {}),
+            physical_state=snapshot.physical_state_for(npc_id) if snapshot else dict(payload.get("physical_state") or {}),
             plan_context=self._get_plan_context(npc_id),
             base_schedule_revision=int(payload.get("base_schedule_revision", 0)),
         )
@@ -295,7 +297,7 @@ class BehaviorEngine:
         self,
         game_day: int,
         refresh_npc_day_state: bool,
-        game_time: GameTimeSnapshot | None = None,
+        game_time: GameTimeSnapshot | None = None, snapshot_store=None, snapshot_id: str = "", time_revision: int = -1, world_revision: int = -1,
     ) -> None:
         """为指定游戏日幂等准备 NPC 状态与日计划，不重复调用 LLM。"""
         async with self._daily_plan_lock:
@@ -333,24 +335,27 @@ class BehaviorEngine:
                         "UPDATE npc_states SET is_asleep = 0, energy = MIN(100.0, energy + 60.0)"
                     )
             frozen_time = game_time or GameTimeSnapshot(game_day, 8, 0, "sunny", 0)
-            await self._plan_all_npcs(game_day, frozen_time)
+            snapshot_store = snapshot_store or self.schedule_snapshot_store
+            if snapshot_store is None: raise ValueError("schedule_snapshot_store_missing")
+            snapshot = snapshot_store.require(snapshot_id, time_revision, world_revision) if snapshot_id else snapshot_store.require_latest()
+            await self._plan_all_npcs(game_day, frozen_time, snapshot)
             self._prepared_days.add(game_day)
             self._last_day = game_day
 
-    async def _plan_all_npcs(self, game_day: int, game_time: GameTimeSnapshot):
+    async def _plan_all_npcs(self, game_day: int, game_time: GameTimeSnapshot, snapshot):
         """通过统一 planner 并发生成并整体发布指定游戏日计划。"""
         npc_ids = ["sakura", "chihaya", "kazuha", "tatsunosuke", "kujo"]
         context = BrainOperationContext(
             operation_id=f"daily_schedule_{game_day}_{uuid.uuid4().hex[:12]}",
             game_time=game_time,
-            world_revision=0,
+            world_revision=snapshot.world_revision,
         )
         owners = tuple(
             NpcScheduleRequest(
                 npc_id=npc_id,
                 profile=self._load_npc_profile(npc_id),
                 routines=tuple(self._routines.get(npc_id, ())),
-                physical_state={},
+                physical_state=snapshot.physical_state_for(npc_id),
                 plan_context=self._get_plan_context(npc_id),
             )
             for npc_id in npc_ids
