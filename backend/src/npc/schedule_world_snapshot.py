@@ -38,7 +38,7 @@ class ScheduleWorldSnapshot:
     def physical_state_for(self, npc_id: str) -> dict:
         """投影单 owner 可消费的物理状态，不伪造可用性。"""
         state = dict(self.npcs.get(npc_id) or {})
-        state.update({"snapshot_id": self.snapshot_id, "time_revision": self.time_revision, "world_revision": self.world_revision, "locations": self.locations, "spots": self.spots})
+        state.update({"snapshot_id": self.snapshot_id, "time_revision": self.time_revision, "world_revision": self.world_revision, "weather": self.weather, "locations": self.locations, "spots": self.spots})
         return state
 
 

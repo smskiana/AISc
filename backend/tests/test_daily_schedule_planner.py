@@ -55,7 +55,7 @@ class DailySchedulePlannerTests(unittest.IsolatedAsyncioTestCase):
             ScheduleCandidate("optional", "read", "z.r", "optional", "exploration", ("exploration",), 99, "08:00"),
             ScheduleCandidate("required", "eat", "z.e", "required", "need", ("need",), 0, "09:00"),
         ]
-        selected, _ = deterministic_fallback(candidates, 1, "sakura", target_count=1)
+        selected, _, _ = deterministic_fallback(candidates, 1, "sakura", target_count=1)
         self.assertEqual("required", selected[0].candidate_id)
 
     def test_game_time_rejects_out_of_range_values(self):

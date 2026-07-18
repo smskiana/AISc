@@ -8,9 +8,11 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable
 
 from ..application.operation_context import BrainOperationContext
-from .schedule_candidates import ScheduleCandidate, ScheduleCandidateBuilder, deterministic_fallback
+from .schedule_candidates import ScheduleCandidate, ScheduleCandidateBuilder, apply_memory_scores, deterministic_fallback
 from .schedule_diagnostics import ScheduleDiagnostics, ScheduleOwnerTrace
+from .schedule_memory_evidence import ScheduleMemoryEvidenceProvider
 from .schedule_prompt_adapter import parse_selection, render_candidates
+from .schedule_validation import validate_selection
 
 
 @dataclass(frozen=True)
@@ -90,13 +92,14 @@ class InteractionReplanRequest:
 class DailySchedulePlanner:
     """统一执行候选构建、LLM 选择、校验、超时与 fallback。"""
 
-    PLANNER_VERSION = "daily_schedule_v1"
+    PLANNER_VERSION = "daily_schedule_v2"
 
-    def __init__(self, catalog, llm_call: Callable[[list[dict]], Awaitable[str]], timeout_seconds: float = 120.0, diagnostics: ScheduleDiagnostics | None = None):
+    def __init__(self, catalog, llm_call: Callable[[list[dict]], Awaitable[str]], timeout_seconds: float = 120.0, diagnostics: ScheduleDiagnostics | None = None, memory_retrieve=None):
         self._builder = ScheduleCandidateBuilder(catalog)
         self._llm_call = llm_call
         self._timeout_seconds = timeout_seconds
         self.diagnostics = diagnostics or ScheduleDiagnostics()
+        self._memory_evidence = ScheduleMemoryEvidenceProvider(memory_retrieve) if memory_retrieve else None
 
     async def prepare_day(self, request: DailyScheduleBatchRequest) -> DailyScheduleBatchResult:
         """并发规划所有 owner，并为每个 owner 独立收口。"""
@@ -113,33 +116,41 @@ class DailySchedulePlanner:
         """执行单 owner operation，超时后隔离迟到供应商结果。"""
         operation_id = f"{context.operation_id}:{owner.npc_id}:{uuid.uuid4().hex[:8]}"
         started = time.perf_counter()
-        candidates = self._builder.build(owner.npc_id, list(owner.routines), owner.physical_state)
+        candidates, rejection_counts = self._builder.build(owner.npc_id, list(owner.routines), owner.physical_state)
         trace = ScheduleOwnerTrace(operation_id, owner.npc_id, context.game_time.day, candidate_count=len(candidates))
+        trace.rejection_counts = rejection_counts
+        if self._memory_evidence:
+            evidence, memory_stats = self._memory_evidence.enrich(owner.npc_id, candidates, context.game_time.time_label(), str(owner.physical_state.get("current_location_id") or ""))
+            candidates = apply_memory_scores(candidates, evidence)
+            trace.memory_stats = memory_stats
         self.diagnostics.publish(trace)
         try:
             messages = [{"role": "user", "content": self._prompt(context, owner, candidates)}]
             raw = await asyncio.wait_for(self._llm_call(messages), timeout=self._timeout_seconds)
             by_id = {item.candidate_id: item for item in candidates}
             selected = parse_selection(raw, by_id)
+            validate_selection(selected, candidates)
             items = tuple(self._to_item(by_id[candidate_id], start, "llm") for candidate_id, start in selected)
             if not items:
                 raise ValueError("empty_schedule")
             trace.status = "success"
         except asyncio.TimeoutError:
-            items, seed = self._fallback(candidates, context.game_time.day, owner.npc_id)
+            items, seed, fallback_reasons = self._fallback(candidates, context.game_time.day, owner.npc_id)
             trace.status, trace.failure_reason, trace.fallback_seed = "fallback", "provider_timeout", seed
             trace.provider_call_not_cancelled = True
+            trace.fallback_reasons = fallback_reasons
         except Exception as error:
-            items, seed = self._fallback(candidates, context.game_time.day, owner.npc_id)
+            items, seed, fallback_reasons = self._fallback(candidates, context.game_time.day, owner.npc_id)
             trace.status, trace.failure_reason, trace.fallback_seed = "fallback", f"planner_rejected:{type(error).__name__}", seed
+            trace.fallback_reasons = fallback_reasons
         trace.selected_count = len(items)
         trace.elapsed_sec = time.perf_counter() - started
         self.diagnostics.publish(trace)
         return NpcScheduleResult(operation_id, owner.npc_id, context.game_time.day, owner.base_schedule_revision + 1, self.PLANNER_VERSION, items, trace.status, trace.failure_reason)
 
-    def _fallback(self, candidates: list[ScheduleCandidate], day: int, npc_id: str) -> tuple[tuple[DailyScheduleItem, ...], int]:
+    def _fallback(self, candidates: list[ScheduleCandidate], day: int, npc_id: str) -> tuple[tuple[DailyScheduleItem, ...], int, dict[str, str]]:
         """生成同契约 fallback 结果。"""
-        selected, seed = deterministic_fallback(candidates, day, npc_id)
+        selected, seed, reasons = deterministic_fallback(candidates, day, npc_id)
         # 多个无 routine 的候选可能共享默认时间；fallback 也必须满足完整计划的严格时间契约。
         next_minute = -1
         items: list[DailyScheduleItem] = []
@@ -151,7 +162,7 @@ class DailySchedulePlanner:
                 break
             items.append(self._to_item(candidate, f"{resolved // 60:02d}:{resolved % 60:02d}", "fallback"))
             next_minute = resolved
-        return tuple(items), seed
+        return tuple(items), seed, reasons
 
     @staticmethod
     def _to_item(candidate: ScheduleCandidate, start: str, source: str) -> DailyScheduleItem:

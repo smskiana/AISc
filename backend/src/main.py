@@ -224,6 +224,13 @@ async def memory_retrieval_snapshot(
     })
 
 
+@app.get("/api/npc/daily_schedule_trace")
+async def daily_schedule_trace(operation_id: str | None = None, npc_id: str | None = None):
+    """返回日程三层决策的安全 owner trace，供 aisc_debug 读取。"""
+    items = _services().behavior.daily_schedule_diagnostics(operation_id or "", npc_id or "")
+    return JSONResponse({"count": len(items), "items": items})
+
+
 @app.get("/api/memory/midnight_snapshot")
 async def midnight_snapshot():
     """返回当前或最近一次午夜维护的结构化阶段与结果。"""

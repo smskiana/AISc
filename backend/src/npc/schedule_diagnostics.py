@@ -20,6 +20,8 @@ class ScheduleOwnerTrace:
     failure_reason: str = ""
     provider_call_not_cancelled: bool = False
     rejection_counts: dict[str, int] = field(default_factory=dict)
+    memory_stats: dict[str, int] = field(default_factory=dict)
+    fallback_reasons: dict[str, str] = field(default_factory=dict)
 
 
 class ScheduleDiagnostics:
@@ -42,4 +44,3 @@ class ScheduleDiagnostics:
         with self._lock:
             values = list(self._items.values())
         return [asdict(item) for item in values if (not operation_id or item.operation_id == operation_id) and (not npc_id or item.npc_id == npc_id)]
-

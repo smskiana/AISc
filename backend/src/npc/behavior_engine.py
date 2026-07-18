@@ -82,6 +82,7 @@ class BehaviorEngine:
         self._daily_schedule_planner = DailySchedulePlanner(
             self._task_catalog,
             self._call_daily_schedule_llm,
+            memory_retrieve=self._retrieve_schedule_evidence,
         )
         self.prompt_assembler = PromptAssembler()
 
@@ -399,6 +400,18 @@ class BehaviorEngine:
         """在线程中调用同步供应商，避免阻塞协议事件循环。"""
         from ..dialogue import llm_client as llm_mod
         return await asyncio.to_thread(llm_mod.llm_client.chat, messages, temperature=0.7)
+
+    @staticmethod
+    def _retrieve_schedule_evidence(request):
+        """经既有 retrieval facade 取得日程可追溯证据，不建立并行检索实现。"""
+        from ..memory import retrieval as retrieval_module
+        if retrieval_module.retrieval_engine is None:
+            raise RuntimeError("schedule_memory_retrieval_unavailable")
+        return retrieval_module.retrieval_engine.retrieve(request)
+
+    def daily_schedule_diagnostics(self, operation_id: str = "", npc_id: str = "") -> list[dict]:
+        """提供只读日程规划 trace，避免传输层耦合 planner 内部字段。"""
+        return self._daily_schedule_planner.diagnostics.snapshot(operation_id, npc_id)
 
     @staticmethod
     def _serialize_schedule_item(item) -> dict:
