@@ -1,0 +1,2 @@
+profile: "优先 persona_tags、speech_tags、social_tags；缺失时兼容 personality、speech_style。"
+location: "优先 mood_tags、sensory_tags、topic_tags；缺失时兼容 atmosphere。"

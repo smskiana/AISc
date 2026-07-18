@@ -1,0 +1,57 @@
+{
+  "location_id": "street",
+  "name": "商店街「樱桥通」",
+  "type": "室外街道",
+  "position": "贯穿东西，约200米",
+  "atmosphere": "日常缓慢有温度，拱廊下的光影，石板路被磨得发亮",
+  "perception_tags": ["室外", "老商店街", "拱廊", "石板路", "邻里感", "猫会经过"],
+  "mood_tags": ["热闹", "熟悉", "邻里感"], "sensory_tags": ["人声", "店铺气味", "脚步声"], "topic_tags": ["街坊消息", "店铺", "天气"],
+  "sensory": {
+    "sight": "木制招牌、拱廊顶棚、公告栏、自动贩卖机和一排小店门面",
+    "sound": "脚步声在拱廊下回响，远处有店门铃和邻居打招呼",
+    "smell": "混着面包香、花香、旧木头和雨后石板路的味道",
+    "touch": "磨亮的石板路和拱廊下微凉的空气"
+  },
+  "visible_objects": ["入口牌坊", "拱廊顶棚", "公告栏", "自动贩卖机", "店铺招牌", "猫碗"],
+  "conversation_hooks": ["今天街上人多不多", "哪家店刚开门", "公告栏的新通知", "深夜贩卖机的咖啡", "商店街是不是又安静了"],
+  "exterior": {
+    "prompt": "2D side-view of a traditional Japanese shopping street (shotengai) about 200 meters long. Wooden torii-style entrance arch with hand-painted sign '樱桥通'. Traditional arcade roof covering the street with sunlight filtering through gaps onto worn stone pavement. Lined with small shops — flower shop with ivy, bakery with yellow facade, old bookstore, wagashi shop with noren curtain, small police box at the far end. Bulletin board with community notices and cat posters. Vending machine glowing softly. Warm afternoon light, Studio Ghibli background art style, nostalgic small-town atmosphere.",
+    "negative": "modern mall, neon signs, cars, crowded city, skyscrapers, 3D, photorealistic"
+  },
+  "interior": null,
+  "spots": {
+    "crossroad": "交叉路口——商店街的中点，最热闹的地段",
+    "arcade": "拱廊——最标志性的建筑，下雨天邻居在这里避雨聊天",
+    "vending_machine": "自动贩卖机——咖啡果汁热玉米浓汤，和叶深夜来买咖啡",
+    "bulletin_board": "公告栏——社区通知、手绘海报、猫咪走失启事"
+  },
+  "spot_perception": {
+    "crossroad": {
+      "tags": ["街心", "人来人往", "邻居容易碰面"],
+      "visible_objects": ["店铺门面", "路口石板", "远处派出所"],
+      "conversation_hooks": ["刚才谁从这里经过", "今天哪家店最忙"]
+    },
+    "arcade": {
+      "tags": ["有顶棚", "雨天避雨", "声音有回响"],
+      "visible_objects": ["透明拱廊顶", "吊灯", "檐下阴影"],
+      "conversation_hooks": ["下雨也能慢慢走", "拱廊旧了但还撑得住"]
+    },
+    "vending_machine": {
+      "tags": ["夜里发光", "罐装咖啡", "偶遇点"],
+      "visible_objects": ["亮着灯的贩卖机", "零钱口", "罐装咖啡按钮"],
+      "conversation_hooks": ["深夜买咖啡", "热饮还是冷饮", "和叶和九条常在这里碰面"]
+    },
+    "bulletin_board": {
+      "tags": ["社区通知", "手写海报", "猫咪走失启事"],
+      "visible_objects": ["图钉", "旧通知纸", "手绘海报", "猫咪照片"],
+      "conversation_hooks": ["有没有新的通知", "谁贴了手绘海报", "那张猫咪启事"]
+    }
+  },
+  "connected_npc": "所有人",
+  "time_atmosphere": {
+    "morning": "商店街刚醒，千早的面包香最先飘出来，然后是樱开门的声音",
+    "noon": "最热闹，邻居互相打招呼，猫在拱廊下遛弯",
+    "evening": "夕阳把街染成金色，店家陆续关门",
+    "night": "深夜的商店街静悄悄，路灯亮着，偶尔有猫跑过"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "npc_id": "sakura",
+  "name": "鹿岛樱",
+  "age": 24,
+  "gender": "female",
+  "occupation": "花店「花時計」店主",
+  "visual_tags": ["女性", "24岁", "亚麻色长发", "松松编发", "花店围裙", "温柔姐姐感", "病弱但坚强"],
+  "persona_tags": ["温柔", "内敛", "外柔内刚"], "speech_tags": ["语速慢", "声音轻", "先安抚再表达"], "social_tags": ["照顾人", "慢热", "亲近熟人"],
+  "address_hint": "玩家平时可以自然叫她“樱姐”“鹿岛樱”或“你”。",
+  "presence_tags": ["动作轻", "身上有淡淡花香", "笑起来安静", "容易把疲惫藏起来"],
+  "speech_perception": "声音轻，语速慢，常先安抚对方再说自己的想法。",
+  "personality": "温柔内敛，外柔内刚，说话轻声话少。面对压力沉默干活，面对赞美耳朵尖泛红。",
+  "speech_style": "语速偏慢，话少，敬语。口头禅：'没关系的。''花会知道的。'",
+  "social_base": 50,
+  "energy_base": 70,
+  "base_budget": 6,
+  "strategy_weights": {"breadth": 0.2, "depth": 0.4, "best": 0.3, "easy": 0.1},
+  "core_memories": [
+    {"value": "父母车祸去世", "emotion": "悲伤", "importance": 1.0},
+    {"value": "玩家小时候在门口放过牵牛花", "emotion": "温暖", "importance": 0.9},
+    {"value": "有先天性心脏病，不告诉别人", "emotion": null, "importance": 0.8}
+  ],
+  "daily_rhythm": {
+    "wake": "5:30", "sleep": "22:30",
+    "routines": [
+      {"time": "8:00", "action": "work_open", "location": "flower_shop.doorway"},
+      {"time": "12:00", "action": "eat", "location": "flower_shop.back_room"},
+      {"time": "17:30", "action": "stand", "location": "flower_shop.counter"},
+      {"time": "18:30", "action": "work_close", "location": "flower_shop.doorway"}
+    ]
+  },
+  "initial_bonds": {
+    "player": 0.55,
+    "chihaya": 0.7,
+    "kazuha": 0.35,
+    "tatsunosuke": 0.3,
+    "kujo": 0.15
+  },
+  "initial_impression_traits": {
+    "player": ["温柔", "有心事", "可靠"],
+    "chihaya": ["最好的朋友", "太吵了但可爱", "让人担心"],
+    "kazuha": ["安静", "应该去写他真正想写的"],
+    "tatsunosuke": ["躲着人但很温柔", "有才能"],
+    "kujo": ["看起来很累", "喂猫时最温柔"]
+  }
+}

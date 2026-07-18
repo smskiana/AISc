@@ -1,0 +1,69 @@
+{
+  "location_id": "park",
+  "name": "河边小公园",
+  "type": "室外公园",
+  "position": "主街东端→向北，河边南岸",
+  "atmosphere": "宁静治愈，风吹樱花树花瓣飘落，喷泉水声是最好的白噪音",
+  "perception_tags": ["室外", "小公园", "樱花树", "喷泉水声", "草地", "猫晒太阳"],
+  "mood_tags": ["开阔", "闲适", "明亮"], "sensory_tags": ["喷泉水声", "草木味", "风"], "topic_tags": ["樱花", "猫", "散步"],
+  "sensory": {
+    "sight": "大樱花树、两张木长椅、小喷泉、草地和偶尔晒太阳的猫",
+    "sound": "喷泉水声、树叶被风吹动、远处商店街的模糊人声",
+    "smell": "草地、河风、树叶和一点潮湿泥土味",
+    "touch": "长椅有被太阳晒过的温度，草地边的空气比街上凉"
+  },
+  "visible_objects": ["大樱花树", "木长椅", "小喷泉", "草地", "小木牌", "晒太阳的猫"],
+  "conversation_hooks": ["猫在晒太阳", "喷泉水声很安静", "樱花树下适合休息", "九条常来喂猫", "从街上走到这里会安静下来"],
+  "exterior": {
+    "prompt": "2D side-view of a small quiet Japanese neighborhood park by a river. A large old cherry blossom tree in the center with pink petals falling. Two wooden benches — one facing the tree, one by a small stone fountain. Well-trimmed grass area. Stray cats lounging on benches in the sun. A small path leading from the shopping street. Warm golden afternoon light filtering through cherry branches, petals floating on the fountain water. Studio Ghibli background art style, serene healing atmosphere.",
+    "negative": "playground equipment, crowds, modern park, concrete, 3D, photorealistic"
+  },
+  "interior": null,
+  "spots": {
+    "entrance": "入口——一条小径从街边延伸过来，旁边立着小木牌",
+    "bench_01": "第一张长椅——正对樱花树，九条最喜欢的位置",
+    "bench_02": "第二张长椅——喷泉旁边，适合一个人安静坐着",
+    "cherry_tree": "大樱花树——公园中心，春天整条街都来看",
+    "fountain": "喷泉——不大但精致，水声轻轻响",
+    "grass_area": "草地——小孩和猫都喜欢在这里打滚"
+  },
+  "spot_perception": {
+    "entrance": {
+      "tags": ["入口小径", "木牌", "从街上转静"],
+      "visible_objects": ["小径", "小木牌", "街道方向"],
+      "conversation_hooks": ["从街上过来一下子安静了", "木牌有些旧"]
+    },
+    "bench_01": {
+      "tags": ["长椅", "正对樱花树", "九条喜欢"],
+      "visible_objects": ["木长椅", "樱花树", "晒太阳的猫"],
+      "conversation_hooks": ["九条常坐这里", "看樱花树的位置很好"]
+    },
+    "bench_02": {
+      "tags": ["喷泉旁", "适合独处", "水声近"],
+      "visible_objects": ["木长椅", "小喷泉", "水面反光"],
+      "conversation_hooks": ["水声让人安静", "一个人坐也不会尴尬"]
+    },
+    "cherry_tree": {
+      "tags": ["公园中心", "大樱花树", "季节感"],
+      "visible_objects": ["粗树干", "花瓣", "树影"],
+      "conversation_hooks": ["春天大家会来看", "树下适合说心事"]
+    },
+    "fountain": {
+      "tags": ["小喷泉", "白噪音", "水光"],
+      "visible_objects": ["石头喷泉", "水花", "飘落花瓣"],
+      "conversation_hooks": ["喷泉声音很好听", "水面上有花瓣"]
+    },
+    "grass_area": {
+      "tags": ["草地", "猫打滚", "松软"],
+      "visible_objects": ["草地", "猫爪印", "落叶"],
+      "conversation_hooks": ["猫很喜欢这里", "草地看起来很舒服"]
+    }
+  },
+  "connected_npc": "九条莲（常来喂猫），所有人",
+  "time_atmosphere": {
+    "morning": "晨光穿过树叶，草地上还挂着露珠",
+    "noon": "阳光最好，猫在长椅上晒太阳",
+    "evening": "最美的时候，夕阳透过樱花树洒下来，整片草地金色",
+    "night": "喷泉还在响，街灯下像一个安静的梦"
+  }
+}

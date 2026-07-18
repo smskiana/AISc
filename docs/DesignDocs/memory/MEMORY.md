@@ -1,0 +1,1 @@
+- [Graph Memory Model](graph-memory-model.md) — 记忆系统从原文/标签混合升级为联想记忆图，每个NPC独立维护一个图

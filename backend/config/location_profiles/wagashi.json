@@ -1,0 +1,61 @@
+{
+  "location_id": "wagashi",
+  "name": "龙月堂",
+  "type": "室内店铺",
+  "position": "主街东段·南侧，书店斜对面",
+  "owner": "龙之介",
+  "atmosphere": "安静精致，豆沙和抹茶的微甜，冷清但有温度",
+  "perception_tags": ["室内", "和果子店", "精致", "冷清", "豆沙甜香", "后台安静"],
+  "mood_tags": ["精致", "安静", "克制"], "sensory_tags": ["豆沙甜香", "木盒触感", "后台安静"], "topic_tags": ["新和果子", "季节", "店里的工作"],
+  "sensory": {
+    "sight": "玻璃展示柜、季节和果子、干净木柜台、半掩暖帘和后台工具",
+    "sound": "店里很安静，只有按铃声、木门轻响和后台细小动作声",
+    "smell": "豆沙、抹茶、糯米和木柜台的淡淡气味",
+    "touch": "柜台擦得很干净，展示柜玻璃带着微凉"
+  },
+  "visible_objects": ["玻璃展示柜", "樱花和果子", "按铃", "暖帘", "和果子工具", "数位板"],
+  "conversation_hooks": ["展示柜里的季节造型", "按铃会不会吓到龙之介", "后台藏着数位板", "今天店里有点冷清", "和果子像小作品"],
+  "exterior": {
+    "prompt": "2D side-view of a traditional Japanese wagashi confectionery shop. Dark wooden facade with a cloth noren curtain hanging at the entrance, printed with '龍月堂' in calligraphy. Display window showing delicate handcrafted wagashi sweets arranged like jewels. A small service bell on the counter visible through the glass. Under a traditional shopping arcade. Soft afternoon light, Studio Ghibli background art style, quiet refined atmosphere.",
+    "negative": "modern cake shop, neon, bright colors, crowded, 3D, photorealistic"
+  },
+  "interior": {
+    "prompt": "2D interior of a traditional Japanese wagashi shop. Beautiful glass display case with seasonal wagashi — sakura mochi, yokan, dorayaki arranged like art pieces. Clean wooden counter with a small service bell and a handwritten note saying 'please ring bell'. Back room visible through a half curtain — workbench with wagashi tools and ingredients neatly arranged. A digital drawing tablet hidden in the corner. Soft natural light, Studio Ghibli background art style.",
+    "negative": "factory, machines, bright white lights, crowded, modern bakery, 3D, photorealistic"
+  },
+  "spots": {
+    "counter": "收银台——干净得过分，按铃旁边贴着「有事请按铃」",
+    "display_case": "展示柜——和果子像珠宝一样摆放，每季不同造型",
+    "back_workbench": "后台——龙之介的世界，和果子工具整齐，角落藏着数位板",
+    "doorway": "门口——暖帘在风里微晃，石板路有点旧但擦得干净"
+  },
+  "spot_perception": {
+    "counter": {
+      "tags": ["收银台", "按铃", "过分干净"],
+      "visible_objects": ["按铃", "有事请按铃纸条", "干净柜台"],
+      "conversation_hooks": ["按铃会不会让龙之介紧张", "柜台擦得很认真"]
+    },
+    "display_case": {
+      "tags": ["展示柜", "季节造型", "像珠宝"],
+      "visible_objects": ["樱花和果子", "羊羹", "小价格牌", "冷光玻璃"],
+      "conversation_hooks": ["哪个和果子最好看", "像不像小小的艺术品"]
+    },
+    "back_workbench": {
+      "tags": ["后台", "龙之介的世界", "工具整齐"],
+      "visible_objects": ["和果子工具", "食材盒", "藏在角落的数位板"],
+      "conversation_hooks": ["后台很安静", "不要随便提数位板，除非关系足够近"]
+    },
+    "doorway": {
+      "tags": ["门口", "暖帘", "擦干净的石板"],
+      "visible_objects": ["暖帘", "木门", "干净石板路"],
+      "conversation_hooks": ["暖帘在风里动", "门口很安静不太像热闹店铺"]
+    }
+  },
+  "connected_npc": "龙之介",
+  "time_atmosphere": {
+    "morning": "龙之介在后台默默做和果子",
+    "noon": "店开着但没人，龙之介躲后台偶尔探头",
+    "evening": "偶尔有人下班来买",
+    "night": "关了门，龙之介画插画，最自在的时间"
+  }
+}

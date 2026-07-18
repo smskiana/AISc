@@ -1,0 +1,9 @@
+responses:
+  direction: '仅返回可解析 JSON 对象，字段为 entity_mentions、location_mentions、themes、relation_facets、time_scope、source_preferences、recall_intent、negative_directions、retrieval_query、query_constraints；retrieval_query 是不新增人物、地点、精确时间或事实的短检索想法；query_constraints 仅可为 person_location、identity、relationship、cause、past_event、recent；枚举必须使用系统契约白名单；不要解释或 Markdown。'
+  choices: '仅返回可解析 JSON 对象，字段 choices 为恰好3个字符串。不要解释、标题或 Markdown。'
+  plan: '仅返回可解析 JSON 数组，元素字段为 time、action、location；不要解释或 Markdown。'
+  social_intent: '仅返回可解析 JSON 对象，字段 want_to_talk 为布尔值；不要解释或 Markdown。'
+  impression: '仅返回可解析 JSON 对象，字段为 baseline_impression、speech_hint、approach_bias（-1到1）、emotion_baseline、lingering_concern；不要解释或 Markdown。'
+  memory_extract: '仅返回可解析 JSON 对象，字段 nodes 和 edges；不要解释或 Markdown。'
+  merge: '只输出合并后的1句文本，不要 JSON、解释或 Markdown。'
+  route: '仅返回可解析 JSON 对象，字段 selected 为候选下标数组；不要解释或 Markdown。'

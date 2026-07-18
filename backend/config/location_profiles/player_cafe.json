@@ -1,0 +1,73 @@
+{
+  "location_id": "player_cafe",
+  "name": "喫茶店",
+  "type": "室内店铺",
+  "position": "主街中央·南侧，花店对面",
+  "owner": "玩家",
+  "atmosphere": "温暖怀旧，咖啡香，老唱片机，奶奶留下的店",
+  "perception_tags": ["室内", "怀旧喫茶店", "木质吧台", "咖啡香", "奶奶留下的店", "暖黄灯"],
+  "mood_tags": ["怀旧", "温暖", "重新开张"], "sensory_tags": ["咖啡香", "木头触感", "暖黄灯光"], "topic_tags": ["奶奶留下的店", "咖啡", "开店准备"],
+  "sensory": {
+    "sight": "旧木吧台、老咖啡机、窗边座位、奶奶留下的旧菜单和墙上的老照片",
+    "sound": "风铃轻响，杯碟碰到木台面，老唱片机有细微杂音",
+    "smell": "咖啡豆、木头、晒过的窗帘和一点旧纸菜单的味道",
+    "touch": "吧台边缘被磨得光滑，桌椅带着温暖的旧木触感"
+  },
+  "visible_objects": ["老咖啡机", "陶瓷杯", "旧菜单", "老照片", "风铃", "木桌椅"],
+  "conversation_hooks": ["奶奶留下的店", "重新开店准备", "咖啡机还能不能用", "窗外的商店街", "老照片里的过去"],
+  "exterior": {
+    "prompt": "2D side-view pixel art of a Japanese kissaten coffee shop storefront. Wooden sliding door with glass panels, vintage wooden carved signboard (name faded), warm yellow light spilling from windows. A small wind chime hangs above the door. Two small round tables with chairs on the sidewalk under a traditional Japanese shopping arcade. Red brick and dark wood facade. Morning sunlight casting long shadows. Studio Ghibli background art style, cozy nostalgic atmosphere.",
+    "negative": "modern, neon, bright colors, cyberpunk, concrete, stainless steel, 3D, photorealistic"
+  },
+  "interior": {
+    "prompt": "2D interior of a cozy Japanese kissaten coffee shop. Wooden counter bar with vintage coffee maker and ceramic cups. Window seat overlooking a shopping street through glass. Two wooden tables, one in a quiet corner with warm lamp light. Old gramophone in the corner. Warm amber lighting, afternoon sun through window. Slightly worn wooden floor. Shelves with old coffee beans jars. Studio Ghibli background art style, cozy nostalgic atmosphere.",
+    "negative": "modern cafe, espresso machine, bright white lights, minimalism, 3D, photorealistic, crowded"
+  },
+  "spots": {
+    "counter": "吧台——奶奶的老咖啡机还在这里，能看见街对面的窗户",
+    "window_seat": "靠窗座位——阳光最好的位置，能看见花店门口的花架",
+    "table_01": "靠里桌子——隐蔽安静，适合一个人待着",
+    "table_02": "中间桌子——上午会被太阳晒得暖洋洋",
+    "doorway": "店门口——风铃会响，门口贴着营业时间",
+    "kitchen": "后厨——老咖啡机，不大但够用"
+  },
+  "spot_perception": {
+    "counter": {
+      "tags": ["吧台", "咖啡机", "店主位置"],
+      "visible_objects": ["老咖啡机", "陶瓷杯", "咖啡豆罐", "旧菜单"],
+      "conversation_hooks": ["咖啡机的状态", "奶奶以前怎么招待客人"]
+    },
+    "window_seat": {
+      "tags": ["靠窗", "阳光", "看得见花店"],
+      "visible_objects": ["窗边椅", "街景", "花店花架", "窗帘"],
+      "conversation_hooks": ["从这里能看到花店", "阳光正好适合坐一会儿"]
+    },
+    "table_01": {
+      "tags": ["靠里", "安静", "适合独处"],
+      "visible_objects": ["旧木桌", "墙角小灯", "菜单夹"],
+      "conversation_hooks": ["这里适合一个人慢慢想事", "老店里最安静的角落"]
+    },
+    "table_02": {
+      "tags": ["中间桌", "暖阳", "普通客座"],
+      "visible_objects": ["双人木桌", "椅子", "桌上糖罐"],
+      "conversation_hooks": ["上午这张桌子最暖", "以后客人会不会坐满"]
+    },
+    "doorway": {
+      "tags": ["入口", "风铃", "营业时间"],
+      "visible_objects": ["玻璃木门", "风铃", "营业时间纸条"],
+      "conversation_hooks": ["风铃声", "什么时候正式营业"]
+    },
+    "kitchen": {
+      "tags": ["后厨", "狭小", "准备区"],
+      "visible_objects": ["水槽", "炉灶", "旧咖啡器具"],
+      "conversation_hooks": ["后厨还要不要整理", "开店前要准备什么"]
+    }
+  },
+  "connected_npc": "玩家",
+  "time_atmosphere": {
+    "morning": "阳光从东窗斜照进来，吧台上有一层薄薄的光",
+    "noon": "最热闹的时候，偶尔有邻居进来坐坐",
+    "evening": "夕阳把整个店染成橙色，影子拉得长长的",
+    "night": "关了店，一盏小灯亮着，偶尔有猫路过窗外"
+  }
+}

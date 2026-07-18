@@ -1,0 +1,14 @@
+{
+  "items": [
+    { "id": "baguette", "name": "法棍面包", "category": "food" },
+    { "id": "melon_bread", "name": "菠萝包", "category": "food" },
+    { "id": "wagashi_sakura", "name": "樱花和果子", "category": "food" },
+    { "id": "canned_coffee", "name": "罐装咖啡", "category": "drink" },
+    { "id": "green_tea", "name": "煎茶", "category": "drink" },
+    { "id": "daisy_bouquet", "name": "雏菊花束", "category": "flower" },
+    { "id": "lily_bouquet", "name": "百合花束", "category": "flower" },
+    { "id": "used_book", "name": "旧书", "category": "other" },
+    { "id": "river_stone", "name": "河边的石头", "category": "other" },
+    { "id": "pressed_flower", "name": "押花书签", "category": "other" }
+  ]
+}

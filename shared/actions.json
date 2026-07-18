@@ -1,0 +1,80 @@
+{
+  "actions": {
+    "routine": [
+      {"id": "patrol", "label": "巡逻", "duration_range_sec": [60, 300]},
+      {"id": "visit", "label": "拜访", "duration_range_sec": [30, 180]},
+      {"id": "sleep", "label": "睡觉", "duration_range_sec": [300, 1800], "interruptible": false, "priority": 0}
+    ],
+    "posture": [
+      {"id": "stand", "label": "站立", "duration_range_sec": [0, 0]},
+      {"id": "sit", "label": "坐下", "duration_range_sec": [60, 600]},
+      {"id": "lean", "label": "靠着", "duration_range_sec": [30, 120]}
+    ],
+    "work": [
+      {"id": "work_craft", "label": "手工工作", "duration_range_sec": [300, 1800]},
+      {"id": "work_tend", "label": "照看店面", "duration_range_sec": [0, 0]},
+      {"id": "work_arrange", "label": "整理陈列", "duration_range_sec": [60, 300]},
+      {"id": "work_clean", "label": "打扫", "duration_range_sec": [60, 180]},
+      {"id": "work_open", "label": "开店", "duration_range_sec": [5, 10]},
+      {"id": "work_close", "label": "关店", "duration_range_sec": [10, 20]}
+    ],
+    "leisure": [
+      {"id": "rest", "label": "休息发呆", "duration_range_sec": [60, 300]},
+      {"id": "read", "label": "读书", "duration_range_sec": [300, 1800]},
+      {"id": "eat", "label": "吃东西", "duration_range_sec": [60, 300]},
+      {"id": "drink", "label": "喝东西", "duration_range_sec": [30, 120]},
+      {"id": "stare_outside", "label": "看窗外", "duration_range_sec": [30, 120]},
+      {"id": "browse", "label": "浏览逛逛", "duration_range_sec": [60, 180]},
+      {"id": "feed_cats", "label": "喂猫", "duration_range_sec": [120, 300], "npc_only": "kujo"}
+    ],
+    "social": [
+      {"id": "greet", "label": "打招呼", "duration_range_sec": [3, 5]},
+      {"id": "talk", "label": "对话", "duration_range_sec": [30, 300], "requires": "target_npc"},
+      {"id": "give_item", "label": "送东西", "duration_range_sec": [10, 30], "requires": "target_npc"},
+      {"id": "observe", "label": "远远观察", "duration_range_sec": [10, 30]}
+    ],
+    "reaction": [
+      {"id": "react_surprise", "label": "被吓到", "duration_range_sec": [3, 5]},
+      {"id": "react_embarrassed", "label": "害羞", "duration_range_sec": [3, 5]},
+      {"id": "react_annoyed", "label": "被打扰", "duration_range_sec": [3, 5]},
+      {"id": "react_grateful", "label": "收到礼物", "duration_range_sec": [3, 5]},
+      {"id": "react_avoid", "label": "回避", "duration_range_sec": [3, 5]},
+      {"id": "react_hide_pain", "label": "隐藏不适", "duration_range_sec": [3, 5], "npc_only": "sakura"}
+    ],
+    "special": [
+      {"id": "special_place_flower", "label": "在门口放花", "npc_only": "sakura"},
+      {"id": "special_midnight_walk", "label": "深夜散步", "npc_only": "kazuha"},
+      {"id": "special_sneak_delivery", "label": "悄悄放书在门口", "npc_only": "kazuha"},
+      {"id": "special_hide", "label": "躲进后台", "npc_only": "tatsunosuke"},
+      {"id": "special_draw_secretly", "label": "偷偷画画", "npc_only": "tatsunosuke"},
+      {"id": "special_talk_to_self", "label": "自言自语", "npc_only": "chihaya"},
+      {"id": "special_burst_in", "label": "不请自来闯入", "npc_only": "chihaya"},
+      {"id": "special_cat_talk", "label": "跟猫说话", "npc_only": "kujo"}
+    ]
+  },
+  "action_affordances": {
+    "stand": {"anywhere": true, "movement_mode": "walk"},
+    "sit": {"location_tags": ["seat"], "movement_mode": "walk"},
+    "lean": {"location_tags": ["lean_spot"], "movement_mode": "walk"},
+    "work_craft": {"location_tags": ["work_surface"], "movement_mode": "walk"},
+    "work_tend": {"location_tags": ["shop_service"], "movement_mode": "walk"},
+    "work_arrange": {"location_tags": ["shop_display", "work_surface"], "movement_mode": "walk"},
+    "work_clean": {"location_tags": ["shop_service", "work_surface"], "movement_mode": "walk"},
+    "work_open": {"location_tags": ["shop_doorway"], "allowed_npcs": ["sakura", "chihaya", "kazuha", "tatsunosuke"], "movement_mode": "walk"},
+    "work_close": {"location_tags": ["shop_doorway"], "allowed_npcs": ["sakura", "chihaya", "kazuha", "tatsunosuke"], "movement_mode": "walk"},
+    "rest": {"location_tags": ["rest_spot"], "movement_mode": "walk"},
+    "read": {"location_tags": ["read_spot"], "movement_mode": "walk"},
+    "eat": {"location_tags": ["eat_spot"], "movement_mode": "walk"},
+    "drink": {"location_tags": ["drink_spot"], "movement_mode": "walk"},
+    "stare_outside": {"location_tags": ["view_spot"], "movement_mode": "walk"},
+    "browse": {"location_tags": ["browse_spot"], "movement_mode": "walk"},
+    "greet": {"location_tags": ["social_spot"], "movement_mode": "walk"},
+    "talk": {"location_tags": ["social_spot"], "movement_mode": "walk"},
+    "give_item": {"location_tags": ["social_spot"], "movement_mode": "walk"},
+    "observe": {"location_tags": ["social_spot", "view_spot"], "movement_mode": "walk"},
+    "feed_cats": {"location_tags": ["cat_spot"], "allowed_npcs": ["kujo"], "movement_mode": "walk"},
+    "patrol": {"location_tags": ["patrol_spot"], "allowed_npcs": ["kujo"], "movement_mode": "walk"},
+    "visit": {"location_tags": ["social_spot"], "movement_mode": "walk"},
+    "sleep": {"location_tags": ["home_spot"], "movement_mode": "walk"}
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "npc_id": "chihaya",
+  "name": "千早",
+  "age": 23,
+  "gender": "female",
+  "occupation": "面包店「小麦色」二代目",
+  "visual_tags": ["女性", "23岁", "橙红短发", "运动头带", "面包店围裙", "热血行动派", "短发姐姐感"],
+  "persona_tags": ["热血", "行动派", "大大咧咧", "正义感强"], "speech_tags": ["语速快", "音量偏高", "直呼名字"], "social_tags": ["主动", "热情", "怕寂寞"],
+  "address_hint": "玩家平时可以自然叫她“千早”或“你”。",
+  "presence_tags": ["动作很快", "身上有面包和黄油香", "笑声明亮", "靠近时像一阵热风"],
+  "speech_perception": "语速快、音量偏高，想到什么就直接说出来。",
+  "personality": "热血笨蛋，行动先于思考，正义感爆棚。大大咧咧，怕寂寞。吵完架三分钟就忘了，从不记仇。",
+  "speech_style": "语速快话多，想什么说什么。口头禅：'交给我吧！''这绝对有问题！''诶嘿嘿~'。对谁都直呼名字没有距离感。",
+  "social_base": 80,
+  "energy_base": 90,
+  "base_budget": 3,
+  "strategy_weights": {"breadth": 0.4, "depth": 0.1, "best": 0.3, "easy": 0.2},
+  "core_memories": [
+    {"value": "小时候被欺负，商店街的大家一起保护了她", "emotion": "感激", "importance": 0.9},
+    {"value": "决定继承面包店因为这条街不能没有小麦色", "emotion": "坚定", "importance": 0.8}
+  ],
+  "initial_bonds": {
+    "player": 0.4, "sakura": 0.9, "kazuha": 0.5, "tatsunosuke": 0.6, "kujo": 0.4
+  },
+  "daily_rhythm": {
+    "wake": "5:30", "sleep": "22:00",
+    "routines": [
+      {"time": "6:00", "action": "stand", "location": "bakery.kneading_table"},
+      {"time": "9:00", "action": "work_open", "location": "bakery.doorway"},
+      {"time": "12:30", "action": "eat", "location": "bakery.counter"},
+      {"time": "17:30", "action": "visit", "location": "flower_shop.doorway"},
+      {"time": "18:00", "action": "give_item", "location": "flower_shop.counter"},
+      {"time": "20:30", "action": "work_close", "location": "bakery.doorway"}
+    ]
+  },
+  "initial_impression_traits": {
+    "player": ["回来了", "有点安静但感觉不坏"],
+    "sakura": ["最好的朋友", "最想保护的人"],
+    "kazuha": ["说话绕来绕去但人不坏"],
+    "tatsunosuke": ["小时候一起玩过", "现在不怎么出来了有点担心"],
+    "kujo": ["大叔但人好", "想让他多笑一下"]
+  }
+}

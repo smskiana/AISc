@@ -1,0 +1,67 @@
+{
+  "location_id": "bakery",
+  "name": "小麦色",
+  "type": "室内店铺",
+  "position": "主街西段·南侧",
+  "owner": "千早",
+  "atmosphere": "热闹温暖，永远飘着面包香，烤箱定时器的叮叮声",
+  "perception_tags": ["室内", "面包店", "暖橙色", "面粉", "烤箱热气", "热闹"],
+  "mood_tags": ["热闹", "温暖", "忙碌"], "sensory_tags": ["面包香", "黄油香", "烤箱热气"], "topic_tags": ["刚出炉的面包", "新口味", "今天的工作"],
+  "sensory": {
+    "sight": "玻璃柜、揉面台、烤炉、展示架和台面上的面粉手印",
+    "sound": "烤箱轰隆声、定时器叮叮声、纸袋摩擦声和千早快节奏的脚步",
+    "smell": "刚出炉的面包、黄油、糖和烤热的麦香",
+    "touch": "空气偏热，桌面有薄薄面粉，纸袋带着刚烤好的温度"
+  },
+  "visible_objects": ["玻璃柜", "揉面台", "大烤箱", "展示架", "小黑板", "纸袋", "兔子印章"],
+  "conversation_hooks": ["今日推荐", "面包刚出炉", "千早的面粉手印", "给邻居留面包", "烤箱是不是太热"],
+  "exterior": {
+    "prompt": "2D side-view of a warm yellow Japanese bakery storefront. Small blackboard sign outside with colorful chalk writing and a cute rabbit doodle — today's recommendation. Glass door half-open, bread aroma visible as steam. Display window showing fresh bread. Wooden bench outside. Under a traditional shopping arcade. Morning light with warm tones, Studio Ghibli background art style, cheerful atmosphere.",
+    "negative": "modern bakery, neon, concrete, chain store, 3D, photorealistic"
+  },
+  "interior": {
+    "prompt": "2D interior of a warm Japanese bakery. Large kneading table with flour dust, big oven with rows of baking trays. Display shelf with fresh bread — melon bread, toast, croissants, baguettes neatly arranged. Glass counter at front. Old family photo on the wall. Steam and warm golden light filling the room. Studio Ghibli background art style, warm cozy bakery atmosphere.",
+    "negative": "industrial kitchen, steel, bright white lights, empty, 3D, photorealistic"
+  },
+  "spots": {
+    "counter": "收银台——玻璃柜里摆着最好的面包，台面上有小兔子印章",
+    "kneading_table": "揉面台——面粉薄薄铺了一层，千早最熟悉的地方",
+    "oven_area": "烤箱区——大烤箱轰隆隆，最热也最香的地方",
+    "display_shelf": "展示架——刚出炉的面包整齐排列",
+    "doorway": "门口——小黑板写着今日推荐，面包香气是最好的招牌"
+  },
+  "spot_perception": {
+    "counter": {
+      "tags": ["收银台", "玻璃柜", "兔子印章"],
+      "visible_objects": ["玻璃柜", "纸袋", "小兔子印章", "找零盘"],
+      "conversation_hooks": ["哪种面包卖得最好", "兔子印章是谁画的"]
+    },
+    "kneading_table": {
+      "tags": ["揉面", "面粉", "千早常驻"],
+      "visible_objects": ["面团", "擀面杖", "面粉手印", "围裙"],
+      "conversation_hooks": ["揉面看起来很费力", "千早今天起得很早"]
+    },
+    "oven_area": {
+      "tags": ["高温", "香气最浓", "烤箱声"],
+      "visible_objects": ["大烤箱", "烤盘", "隔热手套"],
+      "conversation_hooks": ["烤箱很热", "这一炉是不是快好了"]
+    },
+    "display_shelf": {
+      "tags": ["展示架", "刚出炉", "金黄色"],
+      "visible_objects": ["法棍", "菠萝包", "吐司", "价格牌"],
+      "conversation_hooks": ["刚出炉的面包最香", "下午展示架会空很多"]
+    },
+    "doorway": {
+      "tags": ["门口", "小黑板", "面包香外溢"],
+      "visible_objects": ["小黑板", "木门", "门口长椅"],
+      "conversation_hooks": ["今日推荐写在黑板上", "站门口就闻得到香味"]
+    }
+  },
+  "connected_npc": "千早",
+  "time_atmosphere": {
+    "morning": "最忙碌，千早凌晨揉面，烤箱轰隆隆，新鲜面包蒸汽飘出门口",
+    "noon": "午间高峰，千早一边包面包一边聊天",
+    "evening": "面包快卖完了，千早会留几个给邻居",
+    "night": "店关了，烤箱还有余温，千早在后台哼歌"
+  }
+}

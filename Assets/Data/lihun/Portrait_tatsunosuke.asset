@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:yousandi.cn,2023:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38e23b5ee552d5e4e99d21dda455e39d, type: 3}
+  m_Name: Portrait_tatsunosuke
+  m_EditorClassIdentifier: 
+  NpcId: tatsunosuke
+  NpcName: "\u9F99\u4E4B\u4ECB"
+  Default: {fileID: 21300000, guid: 9b6296c82686be949b7db0d6817b1ce0, type: 3}
+  Happy: {fileID: 21300000, guid: 9b6296c82686be949b7db0d6817b1ce0, type: 3}
+  Sad: {fileID: 21300000, guid: 9b6296c82686be949b7db0d6817b1ce0, type: 3}
+  Surprised: {fileID: 21300000, guid: 9b6296c82686be949b7db0d6817b1ce0, type: 3}
+  Embarrassed: {fileID: 21300000, guid: 9b6296c82686be949b7db0d6817b1ce0, type: 3}

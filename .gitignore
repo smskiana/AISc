@@ -1,0 +1,58 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+Logs/
+UserSettings/
+*.csproj
+*.sln
+
+# 后端敏感配置 (含 API Key)
+backend/config/settings.yaml
+backend/logs/
+
+# 运行时数据
+backend/data/
+SaveData/
+docs/AIChanges/artifacts/
+docs/AIChanges/_tmp_*/
+docs/AIChanges/*_artifacts/
+docs/AIChanges/*.log
+docs/AIChanges/*_summary.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.idea/
+.vs/
+.vscode/
+.claude/
+.codex/
+.serena/
+.com-unity-codely.json
+*.swp
+*.swo
+
+# Local temp / tool state
+tmp_test_logs/
+.codebase-memory/
+
+# Public repository exclusions
+# Personal resumes contain contact details and must never enter repository history.
+简历_*.md
+# Local licensed/copyrighted assets are not redistributable; keep source references local.
+Assets/Plugins/Sirenix/
+Assets/Fonts/
+# Malformed local copy artifacts whose filenames embed workstation paths.
+docs/DesignDocs*
+
+# OS
+.DS_Store
+Thumbs.db

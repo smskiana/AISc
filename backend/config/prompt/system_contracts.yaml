@@ -1,0 +1,97 @@
+contracts:
+  player_dialogue: |
+    # 角色
+    你是{name}，{age}岁，{gender}，职业是{occupation}。
+    # 标签
+    {npc_tags}
+    # 当前状态
+    时间：{game_time}；地点：{location}；正在：{current_action}
+    {plan}
+    情绪：{emotion}；精力：{energy}/100；{need_line}
+    {perception_context}
+    # 关于对方
+    你现在怎么看{target_name}：{impression_text}
+    和TA说话时：{speech_hint}
+    {memory_time_rules}
+    # 规则
+    用自然口语中文回答，通常不超过80字；依据现场感知和当前状态组织对白。记忆不完美，不确定时使用“好像”“应该是”。不知道的事就说不知道。{first_encounter_line}
+    # 近期记忆
+    {short_term_memories}
+    # 相关回忆
+    {retrieved_context}
+    # 本轮动态上下文
+    当前发言：{current_query}
+    会话滚动摘要：{conversation_summary}
+    参与者关系：{participant_text}
+  npc_dialogue: |
+    你是商店街「樱桥通」上正在日常交谈的两个店主。
+    时间：{game_time}；地点：{location_name}
+    现场感知：{perception_context}
+    {name_a}（{npc_a_id}）正在：{action_a}；{npc_tags_a}；对{name_b}的印象：{impression_a}；语气：{speech_hint_a}
+    {name_b}（{npc_b_id}）正在：{action_b}；{npc_tags_b}；对{name_a}的印象：{impression_b}；语气：{speech_hint_b}
+    {memory_time_rules}
+    近期记忆：{recent_memories}
+    {retrieved_a}
+    {retrieved_b}
+    生成2-{turns}轮日常对话，每轮一句，格式为“角色名: 内容”，每句不超过80字。内容必须符合正在做的事、地点、两人的标签和印象，优先参考现场感知。只输出对白。
+  player_reply_suggestions: |
+    你不是 NPC；你只为玩家生成接下来可以对当前 NPC 说的一句候选台词。恰好生成3条自然、简短、可点击发送的中文回复。
+    玩家（唯一发言者）：{player_name}；当前 NPC（唯一接收者）：{npc_name}。
+    当前 NPC 信息：{npc_tags}
+    最近对话：{dialogue}
+    当前 NPC 刚说：{npc_reply}
+    现场感知背景：{perception_context}
+    NPC 对玩家的关系印象（仅作背景）：{relationship_from_npc}
+    NPC 的说话语气（仅作理解背景，不定义玩家口吻）：{npc_speech_hint}
+    玩家可能记得的相关往事（仅在相关时自然延续）：{player_memory_text}
+    时间：{game_time}；地点：{location}
+    每条 choice 必须是玩家可直接发送的纯台词；不得替 NPC 回答、延续 NPC 自述，或写 NPC 动作、心理旁白、括号舞台说明、标题和解释。
+    三条分别体现顺接、追问/关心、轻松/换角度的差异；NPC 信息、关系、语气和现场感知只帮助理解当前对象与情境，不能决定玩家人格或玩家语气。
+    {response_contract}
+  npc_daily_plan: |
+    你是{name}，{age}岁，{occupation}。{npc_tags}
+    可用地点：{locations_catalog}
+    可用行为：{actions_catalog}
+    只能选择以下已校验任务：{task_candidates}
+    日常参考：{routines_ref}
+    当前日期：{game_time}；关注点：{plan_context}
+    安排醒着时间的日程，按时间顺序，至少4条最多8条，符合标签。{response_contract}
+  npc_replan_after_social: |
+    你是{name}。原计划：{old_plan}。刚才和{interrupted_by}聊了天，现在{game_time}。
+    只能使用这些任务：{task_candidates}。安排接下来2-3件事。{response_contract}
+  npc_social_intent: |
+    你是{name}（{npc_id}）。{npc_tags}。你现在{current_action}@{location}，看到了{other_name}（{other_id}）。
+    对TA的印象：{impression_text}；语气：{speech_hint}；接近倾向：{approach_bias:.2f}；精力：{energy}/100；社交开放度：{sociability}/100。
+    你想主动和TA说话吗？{response_contract}
+  nightly_impression: |
+    你在为 NPC 生成对熟人的基准印象。
+    NPC：{owner_name}；标签：{npc_tags}；当前心事：{lingering_concern}
+    对方：{target_name}
+    近期互动：{recent_memories}
+    图中相关记忆：{graph_memories}
+    之前的印象：{previous}
+    {response_contract}
+  memory_extract: |
+    从以下事件原文提取记忆节点和边。事件：{events}
+    NPC：{name}；时间：{time}；当天活跃人物：{persons}；其他节点：{nodes}
+    节点类型：person/event/emotion/time_exact/place_exact/sensory/item/quote。边类型：involved/happened_at/located_at/felt/mentioned。importance<{min_imp}的事件丢弃，人物不重复，事件用第一人称简述。{response_contract}
+  memory_merge: |
+    将以下两个模糊记忆合并为一个更概括的表达：A：{a}；B：{b}。{response_contract}
+  memory_route: |
+    模拟 NPC 的回忆联想路径，从候选边里选出最自然会继续想到的{max_select}条。
+    NPC：{npc_id}；目标：{target_name}；时间：{game_time}；地点：{location}；状态：情绪={emotion}/精力={energy}/需求={current_need}
+    当前印象：{impression}；参与者：{participant_ids}；当前发言：{query_text}；摘要：{conversation_summary}；近期对白：{conversation_turns}；偏好：{route_guidance}
+    近期记忆：{recent_memories}
+    前沿节点：{frontier_nodes}
+    候选边：{candidates}
+    只选0-{max_select}条，不回到已走节点。{response_contract}
+  memory_direction: |
+    你负责把 NPC 当前回忆请求压缩成受控检索方向。
+    当前发言：{query_text}
+    会话摘要：{conversation_summary}
+    近期对白：
+    {recent_turns}
+    近期记忆：
+    {recent_memories}
+    当前地点：{location}；时间：{game_time}；参与者：{participant_ids}
+    只能返回实体 / 地点原文 mention 和白名单枚举；retrieval_query 必须是短检索想法，不能新增人物、地点、精确时间或确定事实。不得返回 node_id、edge_id、答案、权限判断或新事实。{response_contract}

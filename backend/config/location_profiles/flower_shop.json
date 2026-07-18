@@ -1,0 +1,73 @@
+{
+  "location_id": "flower_shop",
+  "name": "花時計",
+  "type": "室内店铺",
+  "position": "主街中央·北侧，喫茶店对面",
+  "owner": "鹿岛樱",
+  "atmosphere": "宁静温柔，花的香气混着泥土味，每朵花都被照顾得很好",
+  "perception_tags": ["室内", "花店", "花香", "湿润泥土", "自然光", "安静温柔"],
+  "mood_tags": ["明亮", "温柔", "清新"], "sensory_tags": ["花香", "水声", "自然光"], "topic_tags": ["今天最好看的花", "花束", "送给谁"],
+  "sensory": {
+    "sight": "当季花、藤蔓、木制花架、干净收银台和摆在中央的当天最好看的花",
+    "sound": "剪刀修枝声，水桶轻碰木地板，店门铃声很轻",
+    "smell": "鲜花、湿润泥土、叶片和清水的味道",
+    "touch": "空气偏湿凉，花茎、丝带和包装纸都带着细腻触感"
+  },
+  "visible_objects": ["花束", "花剪", "丝带", "包装纸", "小花瓶", "门口花架", "水桶"],
+  "conversation_hooks": ["今天最好看的花", "门口免费的小花", "给谁选花", "花店和喫茶店隔街相望", "鹿岛樱总是早起换水"],
+  "exterior": {
+    "prompt": "2D side-view of a small Japanese flower shop storefront. Ivy and climbing plants covering the wooden facade. Large display window showing seasonal flowers inside. A wooden signboard hand-painted with '花時計' hangs above. A small wooden flower stand outside the door with a single fresh flower on it — free for anyone. Under a traditional shopping arcade roof. Warm morning light, Studio Ghibli background art style.",
+    "negative": "supermarket, plastic flowers, neon sign, modern glass building, 3D, photorealistic"
+  },
+  "interior": {
+    "prompt": "2D interior of a small Japanese flower shop. Wooden workbench with flower scissors, ribbons, wrapping paper scattered neatly. Display window with seasonal flowers arranged beautifully — tulips in spring, sunflowers in summer. A small counter with a tiny vase holding the day's best flower. Cool back room with flower buckets visible through a door. Soft natural light through the window. Studio Ghibli background art style, serene atmosphere.",
+    "negative": "supermarket flowers, plastic, neon lights, cluttered, 3D, photorealistic"
+  },
+  "spots": {
+    "counter": "收银台——一尘不染，旁边总放着一小瓶当天最好看的花",
+    "workbench": "工作台——花剪、丝带、包装纸散落，樱包扎花束的地方",
+    "window_display": "橱窗——当季最美的花，路人会停下来看",
+    "window_seat": "窗边长椅——樱偶尔坐在这里看着街对面发呆",
+    "doorway": "门口——小花架，每天早上樱放一枝新花，免费的",
+    "back_room": "冷藏室——凉凉的湿意，花在这里保鲜"
+  },
+  "spot_perception": {
+    "counter": {
+      "tags": ["收银台", "当天最好看的花", "干净"],
+      "visible_objects": ["小花瓶", "订单本", "收银托盘"],
+      "conversation_hooks": ["今天这枝花很好看", "柜台总是收拾得很干净"]
+    },
+    "workbench": {
+      "tags": ["工作台", "插花", "花材"],
+      "visible_objects": ["花剪", "丝带", "包装纸", "半成品花束"],
+      "conversation_hooks": ["正在包哪束花", "花材是不是刚换过水"]
+    },
+    "window_display": {
+      "tags": ["橱窗", "当季花", "路人会停下"],
+      "visible_objects": ["橱窗玻璃", "当季花", "小花牌"],
+      "conversation_hooks": ["橱窗今天很亮", "路过的人会不会喜欢这束花"]
+    },
+    "window_seat": {
+      "tags": ["窗边长椅", "发呆", "看得见对面"],
+      "visible_objects": ["长椅", "窗台绿植", "喫茶店方向"],
+      "conversation_hooks": ["从这里能看见喫茶店", "偶尔坐着发呆也不错"]
+    },
+    "doorway": {
+      "tags": ["门口", "免费小花", "早晨最香"],
+      "visible_objects": ["小花架", "木门", "街边石板"],
+      "conversation_hooks": ["今天门口放了什么花", "路过的人能不能闻到花香"]
+    },
+    "back_room": {
+      "tags": ["冷藏室", "湿凉", "保鲜"],
+      "visible_objects": ["花桶", "冷藏架", "水珠"],
+      "conversation_hooks": ["里面比外面凉", "花在这里能多撑几天"]
+    }
+  },
+  "connected_npc": "鹿岛樱",
+  "time_atmosphere": {
+    "morning": "樱早起给花换水，晨光透过橱窗照在水珠上闪闪发光",
+    "noon": "橱窗里的花开得最艳",
+    "evening": "夕阳把花染成暖色，花店最美的时候",
+    "night": "花都安静了，几盏小灯守护着"
+  }
+}

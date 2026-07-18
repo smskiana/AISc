@@ -1,0 +1,61 @@
+{
+  "location_id": "police_box",
+  "name": "樱桥通派出所",
+  "type": "室内",
+  "position": "主街最东端·北侧",
+  "owner": "九条莲",
+  "atmosphere": "慵懒怀旧，阳光照在空椅子上，淡淡的烟味和猫粮味",
+  "perception_tags": ["室内", "小派出所", "旧照片", "猫粮味", "窗边阳光", "慵懒"],
+  "mood_tags": ["安静", "慵懒", "可靠"], "sensory_tags": ["猫粮味", "旧照片", "窗边阳光"], "topic_tags": ["商店街消息", "猫", "旧案"],
+  "sensory": {
+    "sight": "简单木桌、泛黄旧照片、地区地图、窗边椅子和窗台上的猫粮袋",
+    "sound": "街上的声音隔着窗传进来，偶尔有猫在门口叫",
+    "smell": "罐装咖啡、旧文件、猫粮和一点淡淡烟味",
+    "touch": "桌面有旧木头触感，窗边椅子被太阳晒得温暖"
+  },
+  "visible_objects": ["木桌", "旧照片", "地区地图", "咖啡杯", "猫粮袋", "猫碗", "旧自行车"],
+  "conversation_hooks": ["门口等猫", "窗边能看见整条街", "九条的旧照片", "罐装咖啡", "派出所很安静"],
+  "exterior": {
+    "prompt": "2D side-view of a small Japanese neighborhood police box (koban). Slightly weathered white building with a old bicycle parked outside. Cat food bowls lined up near the door. A faded area map visible through the window. Warm afternoon sunlight casting shadows. Under a traditional shopping arcade at the end of the street. Studio Ghibli background art style, quiet slightly melancholic atmosphere.",
+    "negative": "modern police station, guns, serious, intimidating, 3D, photorealistic"
+  },
+  "interior": {
+    "prompt": "2D interior of a small Japanese police box. Simple wooden desk with an old photograph frame — two people in the photo. A chair by the window with the best sunlight, overlooking the street. Filing cabinet in the corner. Windowsill with cat food bags and bowls. Faded district map on the wall. A coffee cup on the desk. Warm afternoon light through window, dust motes floating. Studio Ghibli background art style, quiet lonely atmosphere.",
+    "negative": "modern office, computers, bright lights, busy, 3D, photorealistic"
+  },
+  "spots": {
+    "desk": "九条的桌子——文件不多，一张泛黄的旧照片，上面有两个人",
+    "window_chair": "窗边椅子——阳光最好的位置，能看见整条街",
+    "bench_outside": "门外长椅——邻居歇脚的地方，猫也在这里等九条",
+    "doorway": "门口——门把手磨得发亮，猫碗总是满的"
+  },
+  "spot_perception": {
+    "desk": {
+      "tags": ["九条的桌子", "旧照片", "旧文件"],
+      "visible_objects": ["泛黄旧照片", "文件夹", "咖啡杯", "地区地图"],
+      "conversation_hooks": ["旧照片不要随便追问，除非关系足够近", "九条的咖啡又凉了"]
+    },
+    "window_chair": {
+      "tags": ["窗边", "阳光", "看得见整条街"],
+      "visible_objects": ["窗边椅子", "街景", "窗台猫粮袋"],
+      "conversation_hooks": ["从这里能看见整条街", "九条是不是又在发呆"]
+    },
+    "bench_outside": {
+      "tags": ["门外长椅", "邻居歇脚", "猫等九条"],
+      "visible_objects": ["长椅", "猫", "猫碗", "旧自行车"],
+      "conversation_hooks": ["猫又在等九条", "坐这里能看街上人来人往"]
+    },
+    "doorway": {
+      "tags": ["门口", "磨亮门把手", "猫碗"],
+      "visible_objects": ["门把手", "猫碗", "水盆"],
+      "conversation_hooks": ["猫碗总是满的", "九条其实很会照顾猫"]
+    }
+  },
+  "connected_npc": "九条莲",
+  "time_atmosphere": {
+    "morning": "九条来得不太早，咖啡还冒热气人已经出去了",
+    "noon": "最像在运作的时候，但九条在发呆",
+    "evening": "夕阳把整间屋子染成橙色，九条可能又去公园了",
+    "night": "深夜只剩一盏灯，九条偶尔抽烟看窗外"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "npc_id": "tatsunosuke",
+  "name": "龙之介",
+  "age": 20,
+  "gender": "male",
+  "occupation": "和果子店「龙月堂」独子",
+  "visual_tags": ["男性", "20岁", "微胖", "刘海遮眼", "游戏角色T恤", "社恐青年", "和果子店独子"],
+  "persona_tags": ["社恐", "自卑", "有才华", "渴望改变"], "speech_tags": ["声音轻", "短句", "常停顿和道歉"], "social_tags": ["被动", "熟人面前放松"],
+  "address_hint": "玩家平时可以自然叫他“龙之介”或“你”。",
+  "presence_tags": ["总想往后台缩", "说话时看地面", "手指很灵巧", "男性社恐青年"],
+  "speech_perception": "声音轻，句子短，常带停顿和道歉；被问到喜欢的东西时会稍微多说一点。",
+  "personality": "重度社恐，有人来店里就躲进后台。虚拟世界的王者（游戏全国前十），现实里极度自卑。其实极有才华——Pixiv 10万粉插画师，但没人知道是他。渴望改变但每次都退缩。",
+  "speech_style": "语速快但有气无力。对陌生人3个字以内。对熟人能说完整句子但比正常人少很多。口头禅：'啊...抱歉...''那个...''没事...'。声音很轻。",
+  "social_base": 20,
+  "energy_base": 60,
+  "base_budget": 4,
+  "strategy_weights": {"breadth": 0.05, "depth": 0.15, "best": 0.3, "easy": 0.5},
+  "core_memories": [
+    {"value": "初中的时候把自己画的画给同学看，被嘲笑恶心。从那以后再也没给现实中的人看过画", "emotion": "羞耻", "importance": 0.9},
+    {"value": "偷偷参加了线上插画比赛拿了冠军，但不敢告诉任何人", "emotion": "开心", "importance": 0.8}
+  ],
+  "initial_bonds": {
+    "player": 0.0, "sakura": 0.4, "chihaya": 0.2, "kazuha": 0.5, "kujo": 0.3
+  },
+  "daily_rhythm": {
+    "wake": "7:30", "sleep": "2:00",
+    "routines": [
+      {"time": "8:00", "action": "stand", "location": "wagashi.back_workbench"},
+      {"time": "11:00", "action": "work_open", "location": "wagashi.doorway"},
+      {"time": "14:00", "action": "eat", "location": "wagashi.counter"},
+      {"time": "16:00", "action": "read", "location": "bookstore.reading_sofa"},
+      {"time": "19:00", "action": "rest", "location": "wagashi.back_workbench"},
+      {"time": "23:00", "action": "drink", "location": "street.vending_machine"}
+    ]
+  },
+  "initial_impression_traits": {
+    "player": ["新来的", "不敢说话"],
+    "sakura": ["唯一一个不害怕的人", "说话轻轻的"],
+    "chihaya": ["太耀眼了", "不敢直视", "但送的面包很好吃"],
+    "kazuha": ["书店是避难所", "不说话也没关系"],
+    "kujo": ["看起来凶但其实温柔", "跟我有点像"]
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "items": [
+    {
+      "id": "baguette",
+      "name": "法棍面包",
+      "category": "food",
+      "source": "bakery",
+      "perception_tags": ["长条面包", "外壳硬脆", "麦香", "适合分享"],
+      "sensory": {"sight": "金棕色长条外壳，有斜切纹", "smell": "烤麦香和一点焦香", "touch": "外壳硬脆，掰开里面柔软"},
+      "presence": "常在面包店展示架或纸袋里出现。",
+      "conversation_hooks": ["刚出炉最好吃", "适合配咖啡", "千早会把卖剩的留给邻居"]
+    },
+    {
+      "id": "melon_bread",
+      "name": "菠萝包",
+      "category": "food",
+      "source": "bakery",
+      "perception_tags": ["甜面包", "格纹饼皮", "孩子气", "千早推荐"],
+      "sensory": {"sight": "圆圆的金黄色格纹外皮", "smell": "黄油和砂糖香", "touch": "表面酥，里面松软"},
+      "presence": "常被摆在面包店显眼的位置，是轻松日常的话题。",
+      "conversation_hooks": ["今天的菠萝包烤得很漂亮", "甜味会让人心情好", "适合当下午点心"]
+    },
+    {
+      "id": "wagashi_sakura",
+      "name": "樱花和果子",
+      "category": "food",
+      "source": "wagashi",
+      "perception_tags": ["季节和果子", "粉色", "精致", "像小作品"],
+      "sensory": {"sight": "粉色樱花造型，摆在展示柜里像小小装饰品", "smell": "淡淡豆沙和樱叶香", "touch": "柔软细腻，拿起来要小心"},
+      "presence": "常出现在龙月堂展示柜中，适合聊季节和手艺。",
+      "conversation_hooks": ["像不像一朵能吃的花", "龙之介家的手艺很细", "适合配煎茶"]
+    },
+    {
+      "id": "canned_coffee",
+      "name": "罐装咖啡",
+      "category": "drink",
+      "source": "vending",
+      "perception_tags": ["自动贩卖机", "深夜", "微苦", "温热罐身"],
+      "sensory": {"sight": "金属罐从贩卖机里滚出来", "smell": "打开后有廉价但安心的咖啡香", "touch": "热饮罐会暖手，冷饮罐带水珠"},
+      "presence": "常在街边贩卖机、派出所或深夜偶遇中出现。",
+      "conversation_hooks": ["深夜喝罐装咖啡", "九条和和叶都可能买", "热罐拿在手里很安心"]
+    },
+    {
+      "id": "green_tea",
+      "name": "煎茶",
+      "category": "drink",
+      "source": "shop",
+      "perception_tags": ["热茶", "清苦", "安静", "适合配点心"],
+      "sensory": {"sight": "浅绿色茶汤在杯里晃动", "smell": "清苦茶香", "touch": "茶杯温热，适合慢慢捧着"},
+      "presence": "适合出现在喫茶店、和果子店或安静休息场景。",
+      "conversation_hooks": ["茶有点苦但回甘", "适合配和果子", "慢慢喝能让人安静下来"]
+    },
+    {
+      "id": "daisy_bouquet",
+      "name": "雏菊花束",
+      "category": "flower",
+      "source": "flower_shop",
+      "perception_tags": ["小花束", "明亮", "朴素", "鼓励感"],
+      "sensory": {"sight": "白黄相间的小花束，清爽不张扬", "smell": "淡淡青草和花香", "touch": "花茎细，包装纸轻轻作响"},
+      "presence": "常在花店柜台或工作台附近出现。",
+      "conversation_hooks": ["适合送给需要打起精神的人", "不华丽但很温柔", "鹿岛樱会认真包好丝带"]
+    },
+    {
+      "id": "lily_bouquet",
+      "name": "百合花束",
+      "category": "flower",
+      "source": "flower_shop",
+      "perception_tags": ["高挑花束", "清香", "郑重", "安静"],
+      "sensory": {"sight": "白色百合花瓣舒展开，显得干净郑重", "smell": "香气比雏菊更明显", "touch": "花瓣厚实，花粉要小心"},
+      "presence": "适合在花店橱窗或郑重送礼场景中出现。",
+      "conversation_hooks": ["百合香气很明显", "适合正式一点的心意", "需要小心花粉"]
+    },
+    {
+      "id": "used_book",
+      "name": "旧书",
+      "category": "other",
+      "source": "bookstore",
+      "perception_tags": ["泛黄纸页", "旧纸味", "手写批注", "安静"],
+      "sensory": {"sight": "书页微黄，书脊有磨损", "smell": "旧纸和木书架的味道", "touch": "纸页偏粗，翻动时有轻微沙沙声"},
+      "presence": "旧书店里随处可见，是和叶最自然的话题。",
+      "conversation_hooks": ["书里可能夹着旧书签", "有人留下过批注", "和叶会根据人推荐书"]
+    },
+    {
+      "id": "river_stone",
+      "name": "河边的石头",
+      "category": "other",
+      "source": "found",
+      "perception_tags": ["河岸", "圆滑", "湿凉", "普通但有记忆感"],
+      "sensory": {"sight": "灰白小石头，被河水磨得圆滑", "smell": "潮湿河岸气味", "touch": "冰凉、圆滑、带一点水汽"},
+      "presence": "自然出现在公园或河边樱花道。",
+      "conversation_hooks": ["从河边捡的小石头", "握着会觉得凉", "普通东西也能留住一天的记忆"]
+    },
+    {
+      "id": "pressed_flower",
+      "name": "押花书签",
+      "category": "other",
+      "source": "sakura_gift",
+      "perception_tags": ["书签", "押花", "鹿岛樱气质", "安静礼物"],
+      "sensory": {"sight": "透明书签里压着小花，边缘很细致", "smell": "几乎没有味道，只残留一点干花气息", "touch": "薄薄的，边缘光滑，需要小心保存"},
+      "presence": "适合出现在花店、喫茶店或旧书相关对话里。",
+      "conversation_hooks": ["适合夹在旧书里", "像鹿岛樱会送出的东西", "小心保存的话能留很久"]
+    }
+  ]
+}

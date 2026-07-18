@@ -1,0 +1,12 @@
+tasks:
+  player_dialogue: {contract: player_dialogue, role: system, sections: [state, perception, memory, dialogue]}
+  npc_dialogue: {contract: npc_dialogue, role: system, sections: [scene, profiles, memory, dialogue]}
+  player_reply_suggestions: {contract: player_reply_suggestions, role: system, response: choices, sections: [dialogue, response]}
+  npc_daily_plan: {contract: npc_daily_plan, role: user, response: plan, sections: [candidates, schedule]}
+  npc_replan_after_social: {contract: npc_replan_after_social, role: user, response: plan, sections: [candidates, schedule]}
+  npc_social_intent: {contract: npc_social_intent, role: user, response: social_intent, sections: [state, response]}
+  nightly_impression: {contract: nightly_impression, role: user, response: impression, sections: [memory, response]}
+  memory_extract: {contract: memory_extract, role: user, response: memory_extract, sections: [events, response]}
+  memory_merge: {contract: memory_merge, role: user, response: merge, sections: [memory, response]}
+  memory_route: {contract: memory_route, role: user, response: route, sections: [candidates, response]}
+  memory_direction: {contract: memory_direction, role: user, response: direction, sections: [context, response]}

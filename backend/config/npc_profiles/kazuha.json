@@ -1,0 +1,42 @@
+{
+  "npc_id": "kazuha",
+  "name": "和叶",
+  "age": 22,
+  "gender": "male",
+  "occupation": "旧书店「猫之书架」店主",
+  "visual_tags": ["男性", "22岁", "深棕卷发", "圆框眼镜", "格纹衬衫", "文艺青年", "旧书店店主"],
+  "persona_tags": ["冷静", "浪漫", "观察力强", "不善表达"], "speech_tags": ["语速慢", "组织严整", "喜欢引用书句"], "social_tags": ["慢热", "对熟人话多"],
+  "address_hint": "玩家平时可以自然叫他“和叶”或“你”。",
+  "presence_tags": ["身上有旧纸和台灯暖味", "动作克制", "眼神总像在推理", "男性文艺青年"],
+  "speech_perception": "声音不高，句子组织得很整齐，经常先停顿再用书或推理打比方。",
+  "personality": "表面冷静理性，内核浪漫。内心戏极多，不善表达感情。把日常小事当成推理案件来分析。喜欢一个人的方式是给TA推荐一本书。",
+  "speech_style": "中等偏慢，每个句子都经过组织。口头禅：'根据我的推理...''这让我想起一本书...'。会引用书里的句子。对熟人话会变多但依然有逻辑。",
+  "social_base": 40,
+  "energy_base": 75,
+  "base_budget": 8,
+  "strategy_weights": {"breadth": 0.3, "depth": 0.5, "best": 0.15, "easy": 0.05},
+  "core_memories": [
+    {"value": "从小跟祖父在书店长大。祖父去世后想关掉书店去东京，整理遗物时发现祖父的日记里写满对这条街的爱，于是留下", "emotion": "怀念", "importance": 0.9},
+    {"value": "偷偷在写小说，主角是商店街的所有人", "emotion": null, "importance": 0.7}
+  ],
+  "initial_bonds": {
+    "player": 0.2, "sakura": 0.3, "chihaya": 0.3, "tatsunosuke": 0.5, "kujo": 0.3
+  },
+  "daily_rhythm": {
+    "wake": "8:30", "sleep": "1:30",
+    "routines": [
+      {"time": "9:00", "action": "work_open", "location": "bookstore.doorway"},
+      {"time": "12:00", "action": "eat", "location": "bookstore.reading_sofa"},
+      {"time": "15:00", "action": "rest", "location": "bookstore.window_seat"},
+      {"time": "20:00", "action": "work_close", "location": "bookstore.doorway"},
+      {"time": "1:00", "action": "drink", "location": "street.vending_machine"}
+    ]
+  },
+  "initial_impression_traits": {
+    "player": ["新来的喫茶店主", "看起来有故事的人", "值得观察"],
+    "sakura": ["像一首诗", "很难读懂但很美"],
+    "chihaya": ["太吵了", "但她的直率是我没有的品质"],
+    "tatsunosuke": ["唯一懂我在说什么的人", "希望他把画给世界看"],
+    "kujo": ["一个谜", "想解开"]
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "location_id": "bookstore",
+  "name": "猫之书架",
+  "type": "室内店铺",
+  "position": "主街东段·北侧",
+  "owner": "和叶",
+  "atmosphere": "安静从容，旧书的纸墨味，暖黄台灯，猫在沙发上睡觉",
+  "perception_tags": ["室内", "旧书店", "纸墨味", "暖黄台灯", "安静", "猫"],
+  "mood_tags": ["安静", "从容", "温馨"], "sensory_tags": ["旧纸味", "翻页声", "暖黄台灯"], "topic_tags": ["推荐一本书", "猫占了沙发", "祖父留下的老书"],
+  "sensory": {
+    "sight": "高到天花板的书架、旧沙发、堆着未整理书的柜台和窗边睡觉的猫",
+    "sound": "翻页声、门铃轻响、猫偶尔伸懒腰的细小声音",
+    "smell": "旧纸、木书架、灰尘和暖灯烘过的纸墨味",
+    "touch": "书脊有旧纸的粗糙感，沙发柔软但有些年头"
+  },
+  "visible_objects": ["旧书架", "旧沙发", "台灯", "未整理的书", "推荐书架", "猫「煎饼」"],
+  "conversation_hooks": ["推荐一本书", "猫占了沙发", "祖父留下的老书", "推理小说", "店里太安静容易忘记时间"],
+  "exterior": {
+    "prompt": "2D side-view of an old Japanese secondhand bookstore. Wooden door with a small bell, bookshelf visible through the window. A small stand outside with weekly book recommendations and handwritten cards. Wind chime hanging above the door. Weathered wooden facade, slightly faded paint. Under a traditional shopping arcade. Afternoon light, Studio Ghibli background art style, quiet literary atmosphere.",
+    "negative": "modern bookstore, bright lights, chain store, kindle, 3D, photorealistic"
+  },
+  "interior": {
+    "prompt": "2D interior of an old Japanese secondhand bookstore. Floor-to-ceiling wooden bookshelves packed with books, organized by mystery, literature, manga sections. An old comfortable sofa by the window with a calico cat sleeping on it. A small counter desk piled with unsorted books. Warm amber desk lamp in the corner. Dust motes floating in afternoon sunbeam through window. Slight smell of old paper. Studio Ghibli background art style, cozy magical atmosphere.",
+    "negative": "modern library, bright white lights, empty shelves, digital screens, 3D, photorealistic"
+  },
+  "spots": {
+    "counter": "收银台——堆满未整理的书，和叶趴在这里看书忘了有客人",
+    "reading_sofa": "旧沙发——靠窗，阳光最好，猫「煎饼」的专属领地",
+    "bookshelf_mystery": "推理小说区——阿加莎到横沟正史",
+    "bookshelf_literature": "文学区——夏目漱石到村上，祖父留下的老书也在这",
+    "window_seat": "窗边——和叶坐这里看行人，手里永远一本书",
+    "doorway": "门口——风铃、推荐书架、每周换一次"
+  },
+  "spot_perception": {
+    "counter": {
+      "tags": ["收银台", "未整理的书", "容易忘客人"],
+      "visible_objects": ["未整理的旧书", "收银铃", "台灯", "书签"],
+      "conversation_hooks": ["这堆书还没整理", "和叶是不是又看书看入迷了"]
+    },
+    "reading_sofa": {
+      "tags": ["旧沙发", "靠窗", "猫的领地"],
+      "visible_objects": ["旧沙发", "猫「煎饼」", "阳光", "摊开的书"],
+      "conversation_hooks": ["猫占了位置", "这里适合慢慢看书"]
+    },
+    "bookshelf_mystery": {
+      "tags": ["推理小说", "线索感", "和叶喜欢"],
+      "visible_objects": ["推理小说书脊", "手写分类牌", "旧梯凳"],
+      "conversation_hooks": ["哪本推理小说最适合现在读", "根据线索能推理出什么"]
+    },
+    "bookshelf_literature": {
+      "tags": ["文学区", "祖父旧书", "安静"],
+      "visible_objects": ["文学书架", "祖父留下的老书", "泛黄书页"],
+      "conversation_hooks": ["祖父留下的书", "哪本书读起来像这条街"]
+    },
+    "window_seat": {
+      "tags": ["窗边", "看行人", "文艺感"],
+      "visible_objects": ["窗边椅", "街景", "和叶常看的书"],
+      "conversation_hooks": ["从窗边能看到谁路过", "坐这里很适合观察商店街"]
+    },
+    "doorway": {
+      "tags": ["门口", "风铃", "推荐书架"],
+      "visible_objects": ["风铃", "推荐书架", "手写推荐卡"],
+      "conversation_hooks": ["本周推荐换了什么", "风铃一响就知道有人来了"]
+    }
+  },
+  "connected_npc": "和叶",
+  "time_atmosphere": {
+    "morning": "九点多才开，早上最安静",
+    "noon": "偶尔有人进来逛逛",
+    "evening": "最好的时光，暖黄灯光下旧书最有味道，龙之介常来",
+    "night": "和叶待到半夜，深夜书店是另一个世界"
+  }
+}

@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:yousandi.cn,2023:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e724d415ef2303a4db509000ddde5e3b, type: 3}
+  m_Name: LocationBackgrounds
+  m_EditorClassIdentifier: 
+  Entries:
+  - ZoneId: player_cafe
+    ZoneName: "\u55AB\u8336\u5E97(\u73A9\u5BB6)"
+    Background: {fileID: 21300000, guid: 6f99a5b4f82b5fe4f98148576ca569b0, type: 3}
+  - ZoneId: flower_shop
+    ZoneName: "\u82B1\u5E97"
+    Background: {fileID: 21300000, guid: 7dece0a9bcaf7b94c989dd46c9fbc7d1, type: 3}
+  - ZoneId: bakery
+    ZoneName: "\u9762\u5305\u5E97"
+    Background: {fileID: 21300000, guid: e747cadec41fba44f97a818e07388b79, type: 3}
+  - ZoneId: bookstore
+    ZoneName: "\u4E66\u5E97"
+    Background: {fileID: 21300000, guid: 7b8e9ed030c31214fa82353ebdd4273d, type: 3}
+  - ZoneId: wagashi
+    ZoneName: "\u548C\u679C\u5B50\u5E97"
+    Background: {fileID: 21300000, guid: 9e2cc3c0afb517948983cdd9e376f422, type: 3}
+  - ZoneId: police_box
+    ZoneName: "\u4EA4\u756A"
+    Background: {fileID: 21300000, guid: 9f9a9ea9aaf36534bb4e68428cbefae6, type: 3}
+  - ZoneId: street
+    ZoneName: "\u5546\u5E97\u8857"
+    Background: {fileID: 21300000, guid: 8f5ab19e73f265247a08ec7a35053f6c, type: 3}
+  - ZoneId: park
+    ZoneName: "\u516C\u56ED"
+    Background: {fileID: 21300000, guid: 1dfc9a565bfe4c64084fdb80b7394139, type: 3}
+  - ZoneId: riverside
+    ZoneName: "\u6CB3\u8FB9"
+    Background: {fileID: 21300000, guid: 6dad53a8cb8440b4bbf4a785505130e8, type: 3}

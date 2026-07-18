@@ -1,0 +1,204 @@
+{
+  "schema_version": 1,
+  "facts": [
+    {
+      "fact_id": "player_childhood_in_street",
+      "fact_type": "background",
+      "subject_ids": ["player"],
+      "location_ids": ["shopping_street"],
+      "canonical_summary": "{player_nickname}小时候就在樱桥通长大，后来去了城市",
+      "knowledge_scope": "public",
+      "knower_ids": [],
+      "participant_ids": [],
+      "excluded_observer_ids": [],
+      "source_type": "public_record",
+      "confidence": 0.96,
+      "importance": 0.74,
+      "created_day": 0,
+      "projections": {
+        "default": "Day 0 前，大家知道{canonical_summary}。"
+      }
+    },
+    {
+      "fact_id": "player_cafe_reopening_plan",
+      "fact_type": "background",
+      "subject_ids": ["player"],
+      "location_ids": ["player_cafe"],
+      "canonical_summary": "{player_nickname}准备重新开奶奶留下的喫茶店；这只是当时听到的打算，不代表之后的实际进展",
+      "knowledge_scope": "community",
+      "knower_ids": [],
+      "participant_ids": [],
+      "excluded_observer_ids": [],
+      "source_type": "community_gossip",
+      "confidence": 0.86,
+      "importance": 0.86,
+      "created_day": 0,
+      "projections": {
+        "rumor": "Day 0 前后，街上听说{canonical_summary}。"
+      }
+    },
+    {
+      "fact_id": "grandmother_cafe_closed",
+      "fact_type": "event",
+      "subject_ids": ["player"],
+      "location_ids": ["player_cafe"],
+      "canonical_summary": "奶奶去世后喫茶店关了很久；后来是否重新开起来，要看更新的记忆",
+      "knowledge_scope": "public",
+      "knower_ids": [],
+      "participant_ids": [],
+      "excluded_observer_ids": [],
+      "source_type": "public_record",
+      "confidence": 0.95,
+      "importance": 0.8,
+      "created_day": 0,
+      "projections": {
+        "default": "Day 0 前，大家知道{canonical_summary}。"
+      }
+    },
+    {
+      "fact_id": "street_community_gossip",
+      "fact_type": "background",
+      "subject_ids": [],
+      "location_ids": ["shopping_street"],
+      "canonical_summary": "樱桥通不大，街上几家店彼此都认识，谁家有点动静很快就会传开",
+      "knowledge_scope": "community",
+      "knower_ids": [],
+      "participant_ids": [],
+      "excluded_observer_ids": [],
+      "source_type": "community_gossip",
+      "confidence": 0.92,
+      "importance": 0.66,
+      "created_day": 0,
+      "projections": {
+        "rumor": "街上都在说：{canonical_summary}。"
+      }
+    },
+    {
+      "fact_id": "chihaya_bakery_identity",
+      "fact_type": "identity",
+      "subject_ids": ["chihaya"],
+      "location_ids": ["chihaya_bakery"],
+      "canonical_summary": "千早经营面包店「小麦色」",
+      "knowledge_scope": "public",
+      "knower_ids": [],
+      "participant_ids": [],
+      "excluded_observer_ids": [],
+      "source_type": "public_record",
+      "confidence": 0.99,
+      "importance": 0.9,
+      "created_day": 0,
+      "projections": {
+        "default": "大家都知道，{canonical_summary}。"
+      }
+    },
+    {
+      "fact_id": "sakura_flower_shop_identity",
+      "fact_type": "identity",
+      "subject_ids": ["sakura"],
+      "location_ids": ["sakura_flower_shop"],
+      "canonical_summary": "鹿岛樱经营花店「花時計」",
+      "knowledge_scope": "public",
+      "knower_ids": [],
+      "participant_ids": [],
+      "excluded_observer_ids": [],
+      "source_type": "public_record",
+      "confidence": 0.99,
+      "importance": 0.9,
+      "created_day": 0,
+      "projections": {
+        "default": "大家都知道，{canonical_summary}。"
+      }
+    },
+    {
+      "fact_id": "kazuha_bookshop_identity",
+      "fact_type": "identity",
+      "subject_ids": ["kazuha"],
+      "location_ids": ["kazuha_bookshop"],
+      "canonical_summary": "和叶经营旧书店「猫之书架」",
+      "knowledge_scope": "public",
+      "knower_ids": [],
+      "participant_ids": [],
+      "excluded_observer_ids": [],
+      "source_type": "public_record",
+      "confidence": 0.99,
+      "importance": 0.9,
+      "created_day": 0,
+      "projections": {
+        "default": "大家都知道，{canonical_summary}。"
+      }
+    },
+    {
+      "fact_id": "tatsunosuke_sweets_shop_identity",
+      "fact_type": "identity",
+      "subject_ids": ["tatsunosuke"],
+      "location_ids": ["tatsunosuke_sweets_shop"],
+      "canonical_summary": "龙之介是和果子店「龙月堂」的独子",
+      "knowledge_scope": "public",
+      "knower_ids": [],
+      "participant_ids": [],
+      "excluded_observer_ids": [],
+      "source_type": "public_record",
+      "confidence": 0.98,
+      "importance": 0.86,
+      "created_day": 0,
+      "projections": {
+        "default": "大家都知道，{canonical_summary}。"
+      }
+    },
+    {
+      "fact_id": "kujo_police_identity",
+      "fact_type": "identity",
+      "subject_ids": ["kujo"],
+      "location_ids": ["kujo_police_box"],
+      "canonical_summary": "九条莲在樱桥通派出所担任巡查",
+      "knowledge_scope": "public",
+      "knower_ids": [],
+      "participant_ids": [],
+      "excluded_observer_ids": [],
+      "source_type": "public_record",
+      "confidence": 0.99,
+      "importance": 0.9,
+      "created_day": 0,
+      "projections": {
+        "default": "大家都知道，{canonical_summary}。"
+      }
+    },
+    {
+      "fact_id": "childhood_street_protection",
+      "fact_type": "event",
+      "subject_ids": ["chihaya"],
+      "location_ids": ["shopping_street"],
+      "canonical_summary": "小时候商店街的大家一起保护过千早",
+      "knowledge_scope": "participants",
+      "knower_ids": [],
+      "participant_ids": ["chihaya", "sakura", "kazuha", "tatsunosuke", "kujo"],
+      "excluded_observer_ids": [],
+      "source_type": "participant_memory",
+      "confidence": 0.9,
+      "importance": 0.78,
+      "created_day": 0,
+      "projections": {
+        "participant": "你亲身经历过：{canonical_summary}。"
+      }
+    },
+    {
+      "fact_id": "sakura_hidden_heart_condition",
+      "fact_type": "secret",
+      "subject_ids": ["sakura"],
+      "location_ids": [],
+      "canonical_summary": "鹿岛樱有先天性心脏病，但不希望别人知道",
+      "knowledge_scope": "private",
+      "knower_ids": [],
+      "participant_ids": [],
+      "excluded_observer_ids": ["player"],
+      "source_type": "private_memory",
+      "confidence": 1.0,
+      "importance": 0.95,
+      "created_day": 0,
+      "projections": {
+        "subject": "这是樱自己知道的秘密：{canonical_summary}。",
+        "explicit_knower": "你被明确告知：{canonical_summary}。"
+      }
+    }
+  ]
+}

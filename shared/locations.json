@@ -1,0 +1,88 @@
+{
+  "zones": {
+    "player_cafe": {
+      "label": "喫茶店",
+      "spots": ["counter", "window_seat", "table_01", "table_02", "doorway", "kitchen", "bed"]
+    },
+    "flower_shop": {
+      "label": "花店「花時計」",
+      "spots": ["counter", "workbench", "window_display", "window_seat", "doorway", "back_room"]
+    },
+    "bakery": {
+      "label": "面包店「小麦色」",
+      "spots": ["counter", "kneading_table", "oven_area", "display_shelf", "doorway"]
+    },
+    "bookstore": {
+      "label": "旧书店「猫之书架」",
+      "spots": ["counter", "reading_sofa", "bookshelf_mystery", "bookshelf_literature", "window_seat", "doorway"]
+    },
+    "wagashi": {
+      "label": "和果子店「龙月堂」",
+      "spots": ["counter", "display_case", "back_workbench", "doorway"]
+    },
+    "police_box": {
+      "label": "樱桥通派出所",
+      "spots": ["desk", "window_chair", "bench_outside", "doorway"]
+    },
+    "street": {
+      "label": "商店街主街",
+      "spots": ["crossroad", "arcade", "vending_machine", "bulletin_board"]
+    },
+    "park": {
+      "label": "河边小公园",
+      "spots": ["entrance", "bench_01", "bench_02", "cherry_tree", "fountain", "grass_area"]
+    },
+    "riverside": {
+      "label": "河边樱花道",
+      "spots": ["bench", "bridge", "cherry_row", "path"]
+    }
+  },
+  "spot_tags": {
+    "player_cafe.counter": ["shop_service", "eat_spot", "drink_spot", "social_spot"],
+    "player_cafe.window_seat": ["seat", "rest_spot", "read_spot", "drink_spot", "view_spot", "social_spot"],
+    "player_cafe.table_01": ["seat", "eat_spot", "drink_spot", "social_spot"],
+    "player_cafe.table_02": ["seat", "eat_spot", "drink_spot", "social_spot"],
+    "player_cafe.doorway": ["shop_doorway", "social_spot"],
+    "player_cafe.kitchen": ["work_surface", "eat_spot"],
+    "player_cafe.bed": ["player_only", "sleep_spot"],
+    "flower_shop.counter": ["shop_service", "eat_spot", "social_spot"],
+    "flower_shop.workbench": ["work_surface", "social_spot"],
+    "flower_shop.window_display": ["shop_display", "browse_spot", "view_spot"],
+    "flower_shop.window_seat": ["seat", "rest_spot", "read_spot", "drink_spot", "view_spot", "social_spot"],
+    "flower_shop.doorway": ["shop_doorway", "social_spot"],
+    "flower_shop.back_room": ["home_spot", "rest_spot", "eat_spot"],
+    "bakery.counter": ["shop_service", "eat_spot", "social_spot"],
+    "bakery.kneading_table": ["work_surface", "home_spot"],
+    "bakery.oven_area": ["work_surface"],
+    "bakery.display_shelf": ["shop_display", "browse_spot"],
+    "bakery.doorway": ["shop_doorway", "social_spot"],
+    "bookstore.counter": ["shop_service", "social_spot"],
+    "bookstore.reading_sofa": ["seat", "rest_spot", "read_spot", "eat_spot", "drink_spot", "social_spot", "home_spot"],
+    "bookstore.bookshelf_mystery": ["shop_display", "browse_spot", "read_spot"],
+    "bookstore.bookshelf_literature": ["shop_display", "browse_spot", "read_spot"],
+    "bookstore.window_seat": ["seat", "rest_spot", "read_spot", "view_spot"],
+    "bookstore.doorway": ["shop_doorway", "social_spot"],
+    "wagashi.counter": ["shop_service", "eat_spot", "social_spot"],
+    "wagashi.display_case": ["shop_display", "browse_spot"],
+    "wagashi.back_workbench": ["work_surface", "home_spot", "rest_spot"],
+    "wagashi.doorway": ["shop_doorway", "social_spot"],
+    "police_box.desk": ["work_surface", "eat_spot", "home_spot", "patrol_spot"],
+    "police_box.window_chair": ["seat", "rest_spot", "view_spot"],
+    "police_box.bench_outside": ["seat", "rest_spot", "social_spot", "patrol_spot"],
+    "police_box.doorway": ["social_spot", "patrol_spot"],
+    "street.crossroad": ["social_spot", "patrol_spot"],
+    "street.arcade": ["browse_spot", "social_spot", "patrol_spot"],
+    "street.vending_machine": ["drink_spot", "lean_spot", "social_spot", "cat_spot", "patrol_spot"],
+    "street.bulletin_board": ["browse_spot", "social_spot", "patrol_spot"],
+    "park.entrance": ["social_spot", "patrol_spot"],
+    "park.bench_01": ["seat", "rest_spot", "read_spot", "eat_spot", "drink_spot", "social_spot", "patrol_spot"],
+    "park.bench_02": ["seat", "rest_spot", "read_spot", "eat_spot", "drink_spot", "social_spot"],
+    "park.cherry_tree": ["view_spot", "social_spot"],
+    "park.fountain": ["view_spot", "social_spot", "patrol_spot"],
+    "park.grass_area": ["rest_spot", "social_spot"],
+    "riverside.bench": ["seat", "rest_spot", "read_spot", "eat_spot", "drink_spot", "view_spot", "social_spot"],
+    "riverside.bridge": ["view_spot", "social_spot", "patrol_spot"],
+    "riverside.cherry_row": ["view_spot", "social_spot", "patrol_spot"],
+    "riverside.path": ["patrol_spot", "social_spot"]
+  }
+}

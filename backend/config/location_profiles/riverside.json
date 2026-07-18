@@ -1,0 +1,57 @@
+{
+  "location_id": "riverside",
+  "name": "河边樱花道",
+  "type": "室外河岸",
+  "position": "公园→向北过桥，河对岸",
+  "atmosphere": "浪漫安静，河水声像在听你说话，秘密和心事的见证者",
+  "perception_tags": ["室外", "河岸", "樱花道", "小石桥", "水声", "适合心事"],
+  "mood_tags": ["开阔", "安静", "清凉"], "sensory_tags": ["水声", "风", "湿润泥土"], "topic_tags": ["河边散步", "樱花", "今天的风"],
+  "sensory": {
+    "sight": "河水、樱花树列、小石桥、河边长椅和远处商店街的屋顶",
+    "sound": "河水轻轻流动，风穿过樱花树，夜里声音会更清楚",
+    "smell": "河水、潮湿石头、青草和樱花树叶的淡味",
+    "touch": "河风偏凉，桥栏和石子路带着水汽"
+  },
+  "visible_objects": ["河水", "小石桥", "樱花树列", "河边长椅", "石子路", "远处商店街屋顶"],
+  "conversation_hooks": ["夕阳照在河面上", "把心事说给河水听", "和叶深夜散步", "鹿岛樱偶尔来看夕阳", "桥上能看到商店街"],
+  "exterior": {
+    "prompt": "2D side-view of a peaceful Japanese riverside with cherry blossom trees. A row of cherry trees along the riverbank, pink petals floating on the clear shallow water with pebbles visible beneath. A small old stone bridge arching over the river connecting both sides. A single wooden bench facing the river. The shopping street visible in the background. Late afternoon golden sunset reflecting on the water surface creating long shimmering ripples. Studio Ghibli background art style, romantic slightly melancholic atmosphere.",
+    "negative": "highway, concrete embankment, buildings, crowds, modern bridge, 3D, photorealistic"
+  },
+  "interior": null,
+  "spots": {
+    "bench": "河边长椅——唯一的一张，正对河，所有心事都可以说给河水听",
+    "bridge": "小石桥——连接两岸，栏杆上刻着岁月痕迹，站在桥上看日落最好",
+    "cherry_row": "樱花道——沿河的一排樱花树，春天花瓣落在河面上像粉色的河",
+    "path": "河岸小路——不宽但平整，适合一个人慢慢走"
+  },
+  "spot_perception": {
+    "bench": {
+      "tags": ["唯一长椅", "正对河", "适合心事"],
+      "visible_objects": ["河边长椅", "河面", "落花", "石子路"],
+      "conversation_hooks": ["坐这里像在跟河水说话", "这里适合安静一会儿"]
+    },
+    "bridge": {
+      "tags": ["小石桥", "看日落", "岁月痕迹"],
+      "visible_objects": ["石桥栏杆", "桥下河水", "远处屋顶"],
+      "conversation_hooks": ["站在桥上能看见商店街", "桥栏上有旧痕迹"]
+    },
+    "cherry_row": {
+      "tags": ["樱花道", "季节感", "粉色河面"],
+      "visible_objects": ["樱花树列", "花瓣", "河面反光"],
+      "conversation_hooks": ["春天花瓣会落满河面", "沿着这里走很适合沉思"]
+    },
+    "path": {
+      "tags": ["河岸小路", "慢走", "安静"],
+      "visible_objects": ["平整小路", "青草", "河岸石头"],
+      "conversation_hooks": ["一个人慢慢走也很好", "夜里水声会更明显"]
+    }
+  },
+  "connected_npc": "鹿岛樱（偶尔看夕阳），和叶（深夜散步）",
+  "time_atmosphere": {
+    "morning": "河面薄雾，像没睡醒，早起的鸟儿在水边觅食",
+    "noon": "阳光把河水照得透亮，樱花树下是乘凉好地方",
+    "evening": "最美的时候，樱偶尔一个人来这里看夕阳",
+    "night": "月光洒河面，水流声轻轻，深夜沉思的地方"
+  }
+}
