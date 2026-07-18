@@ -16,6 +16,8 @@ public sealed class NpcDailyScheduleController
     public NpcDailyScheduleItem PendingCandidate { get; private set; }
     public IReadOnlyList<NpcDailyScheduleItem> Remaining => _remaining;
     public string LastDecisionReason { get; private set; } = string.Empty;
+    public string AcceptedPayloadFingerprint => _acceptedPayloadFingerprint;
+    public string LastOperationId { get; private set; } = string.Empty;
 
     public NpcDailyScheduleController(INpcScheduleSwitchPolicy switchPolicy = null)
     {
@@ -30,6 +32,16 @@ public sealed class NpcDailyScheduleController
         if (message == null || message.game_day < 1 || message.schedule_revision < 1)
         {
             reason = "invalid_schedule_envelope";
+            return false;
+        }
+        if (message.status == "failed" || message.status == "skipped")
+        {
+            reason = "non_authoritative_schedule_status";
+            return false;
+        }
+        if (ScheduleDay > 0 && message.game_day < ScheduleDay)
+        {
+            reason = "stale_schedule_day";
             return false;
         }
         string fingerprint = BuildFingerprint(message.items);
@@ -48,6 +60,7 @@ public sealed class NpcDailyScheduleController
         ScheduleDay = message.game_day;
         ScheduleRevision = message.schedule_revision;
         PlannerVersion = message.planner_version ?? string.Empty;
+        LastOperationId = message.operation_id ?? string.Empty;
         PendingCandidate = null;
         _acceptedPayloadFingerprint = fingerprint;
         reason = "schedule_replaced";
@@ -103,6 +116,7 @@ public sealed class NpcDailyScheduleController
         _remaining.Clear();
         _remaining.AddRange(remaining ?? new List<NpcDailyScheduleItem>());
         _acceptedPayloadFingerprint = BuildFingerprint(_remaining);
+        LastOperationId = string.Empty;
         LastDecisionReason = "schedule_restored";
     }
 

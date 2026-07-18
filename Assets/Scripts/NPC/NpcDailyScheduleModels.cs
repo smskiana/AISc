@@ -34,6 +34,8 @@ public sealed class NpcDailyScheduleReadyMsg
     public int game_day;
     public long schedule_revision;
     public string planner_version;
+    public string status;
+    public string failure_reason;
     public List<NpcDailyScheduleItem> items = new List<NpcDailyScheduleItem>();
 }
 
@@ -50,6 +52,8 @@ public sealed class NpcDailyScheduleDiagnosticSnapshot
     public int remaining_count;
     public string pending_candidate_id;
     public string last_decision_reason;
+    public string payload_fingerprint;
+    public string last_operation_id;
 }
 
 public enum NpcScheduleSwitchDecision

@@ -140,6 +140,23 @@ CREATE TABLE IF NOT EXISTS npc_impressions (
 );
 CREATE INDEX IF NOT EXISTS idx_impressions_owner ON npc_impressions(owner_id);
 
+-- NPC 日程权威快照：跨进程恢复与提交幂等
+CREATE TABLE IF NOT EXISTS npc_daily_schedule_snapshots (
+    game_day INTEGER NOT NULL,
+    npc_id TEXT NOT NULL,
+    schedule_revision INTEGER NOT NULL,
+    payload_fingerprint TEXT NOT NULL,
+    planner_version TEXT NOT NULL DEFAULT '',
+    operation_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    failure_reason TEXT NOT NULL DEFAULT '',
+    payload_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (game_day, npc_id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_schedule_identity
+    ON npc_daily_schedule_snapshots(game_day, npc_id, schedule_revision, payload_fingerprint);
+
 -- 融合节点来源追溯
 CREATE TABLE IF NOT EXISTS memory_merge_sources (
     merged_node_id TEXT NOT NULL,
@@ -391,6 +408,35 @@ class SQLiteClient:
             cursor = conn.execute(sql, params)
             conn.commit()
             return cursor
+
+    def get_daily_schedule_snapshot(self, game_day: int, npc_id: str) -> dict | None:
+        """读取跨进程可恢复的 NPC 日程快照。"""
+        return self.fetchone(
+            "SELECT * FROM npc_daily_schedule_snapshots WHERE game_day = ? AND npc_id = ?",
+            (game_day, npc_id),
+        )
+
+    def save_daily_schedule_snapshot(self, snapshot: dict) -> None:
+        """以同日日程主键原子保存最新权威快照。"""
+        self.execute(
+            """INSERT INTO npc_daily_schedule_snapshots
+               (game_day, npc_id, schedule_revision, payload_fingerprint,
+                planner_version, operation_id, status, failure_reason, payload_json, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+               ON CONFLICT(game_day, npc_id) DO UPDATE SET
+                 schedule_revision=excluded.schedule_revision,
+                 payload_fingerprint=excluded.payload_fingerprint,
+                 planner_version=excluded.planner_version,
+                 operation_id=excluded.operation_id,
+                 status=excluded.status,
+                 failure_reason=excluded.failure_reason,
+                 payload_json=excluded.payload_json,
+                 updated_at=datetime('now')""",
+            (snapshot["game_day"], snapshot["npc_id"], snapshot["schedule_revision"],
+             snapshot["payload_fingerprint"], snapshot.get("planner_version", ""),
+             snapshot["operation_id"], snapshot.get("status", "generated"),
+             snapshot.get("failure_reason", ""), snapshot["payload_json"]),
+        )
 
     def fetchone(self, sql: str, params: tuple = ()) -> dict | None:
         with self._conn() as conn:

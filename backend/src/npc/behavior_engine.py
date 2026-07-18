@@ -7,6 +7,7 @@ Unity 是 NPC 位置、P0/need/运行时状态、物理社交候选和任务终�
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import uuid
@@ -234,6 +235,15 @@ class BehaviorEngine:
                 remaining_schedule=remaining,
             )
         )
+        payload = [self._serialize_schedule_item(item) for item in result.items]
+        self.db.save_daily_schedule_snapshot({
+            "game_day": result.game_day, "npc_id": result.npc_id,
+            "schedule_revision": result.schedule_revision,
+            "payload_fingerprint": self._schedule_fingerprint(payload),
+            "planner_version": result.planner_version, "operation_id": result.operation_id,
+            "status": result.status, "failure_reason": result.failure_reason,
+            "payload_json": json.dumps(payload, ensure_ascii=False, sort_keys=True),
+        })
         return {
             "type": "NPC_DAILY_SCHEDULE_READY",
             "operation_id": result.operation_id,
@@ -241,7 +251,7 @@ class BehaviorEngine:
             "game_day": result.game_day,
             "schedule_revision": result.schedule_revision,
             "planner_version": result.planner_version,
-            "items": [self._serialize_schedule_item(item) for item in result.items],
+            "items": payload,
             "status": result.status,
             "failure_reason": result.failure_reason,
         }
@@ -290,6 +300,29 @@ class BehaviorEngine:
         """为指定游戏日幂等准备 NPC 状态与日计划，不重复调用 LLM。"""
         async with self._daily_plan_lock:
             if game_day in self._prepared_days:
+                return
+            # 进程重启后先从 SQLite 恢复，只有不存在权威快照时才调用 planner。
+            persisted = [self.db.get_daily_schedule_snapshot(game_day, npc_id)
+                         for npc_id in ("sakura", "chihaya", "kazuha", "tatsunosuke", "kujo")]
+            if all(persisted):
+                for snapshot in persisted:
+                    items = json.loads(snapshot["payload_json"])
+                    self._plans[snapshot["npc_id"]] = [
+                        {"time": item.get("planned_start_time", ""), "action": item.get("action_id", ""),
+                         "location": item.get("location_id", "")}
+                        for item in items
+                    ]
+                    if self._ws_sender:
+                        await self._ws_sender({
+                            "type": "NPC_DAILY_SCHEDULE_READY",
+                            "operation_id": snapshot["operation_id"],
+                            "npc_id": snapshot["npc_id"], "game_day": game_day,
+                            "schedule_revision": snapshot["schedule_revision"],
+                            "planner_version": snapshot["planner_version"], "items": items,
+                            "status": "idempotent_replay", "failure_reason": "",
+                        })
+                self._prepared_days.add(game_day)
+                self._last_day = game_day
                 return
             if refresh_npc_day_state:
                 if self._state_manager:
@@ -340,7 +373,21 @@ class BehaviorEngine:
                     "schedule_revision": result.schedule_revision,
                     "planner_version": result.planner_version,
                     "items": [self._serialize_schedule_item(item) for item in result.items],
+                    "status": result.status,
+                    "failure_reason": result.failure_reason,
                 })
+            payload = [self._serialize_schedule_item(item) for item in result.items]
+            self.db.save_daily_schedule_snapshot({
+                "game_day": result.game_day,
+                "npc_id": result.npc_id,
+                "schedule_revision": result.schedule_revision,
+                "payload_fingerprint": self._schedule_fingerprint(payload),
+                "planner_version": result.planner_version,
+                "operation_id": result.operation_id,
+                "status": result.status,
+                "failure_reason": result.failure_reason,
+                "payload_json": json.dumps(payload, ensure_ascii=False, sort_keys=True),
+            })
         logger.info(f"日计划生成完成: {sum(1 for p in self._plans.values() if p)} NPCs")
 
     async def _call_daily_schedule_llm(self, messages: list[dict]) -> str:
@@ -366,6 +413,12 @@ class BehaviorEngine:
             "source": item.source,
             "miss_policy": item.miss_policy,
         }
+
+    @staticmethod
+    def _schedule_fingerprint(items: list[dict]) -> str:
+        """按完整 DTO 计算稳定指纹，避免同 revision 内容漂移。"""
+        encoded = json.dumps(items, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
     # ══════════════════════════════════════════════════════════
     # 计划辅助

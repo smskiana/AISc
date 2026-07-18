@@ -236,6 +236,8 @@ public class NpcSpawner : MonoBehaviour
                 remaining_count = schedule.Remaining.Count,
                 pending_candidate_id = schedule.PendingCandidate?.candidate_id ?? string.Empty,
                 last_decision_reason = schedule.LastDecisionReason,
+                payload_fingerprint = schedule.AcceptedPayloadFingerprint,
+                last_operation_id = schedule.LastOperationId,
             });
         }
         return snapshots;
