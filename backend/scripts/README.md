@@ -10,6 +10,13 @@
 
 ## 核心入口
 
-- `run_7day_benchmark.py`：隔离运行多日游戏时钟并汇总记忆、行为和性能指标。
-- `tune_memory_route_profiles.py`：基于真实记忆图与真实 LLM，二分搜索性能、平衡、质量三档记忆路由阈值。
-- `evaluate_deep_retrieval.py`：使用离线固定图和 fake LLM 评估三业务模式 × 三路由策略，输出调用次数、路径、停止原因和向量查询次数。
+- `check_project_conventions.py`：校验共享地点、行为、物品和 NPC 配置约定；不负责 Markdown 互链或测试记录完整性。
+- `run_7day_benchmark.py`：需要多日运行、记忆/行为汇总或性能趋势时使用隔离长跑。
+- `tune_memory_route_profiles.py`：需要基于真实记忆图与真实 LLM 调整性能、平衡、质量三档阈值时使用；注意真实调用成本和隔离数据。
+- `evaluate_deep_retrieval.py`：需要快速比较三业务模式 × 三路由策略时使用离线固定图和 fake LLM，输出调用次数、路径、停止原因和向量查询次数。
+
+## 使用规则
+
+1. 先确认普通聚焦测试不能回答问题，再选择专用脚本；不要把长跑脚本当作每次修改的默认门禁。
+2. 执行前阅读目标脚本参数和数据写入范围，涉及存档、SQLite、LanceDB 或真实 LLM 时使用隔离副本。
+3. 测试记录写明脚本、参数、数据源、墙钟、产物路径和结论；原始产物放入 `docs/AIChanges/artifacts/`。

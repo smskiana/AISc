@@ -15,7 +15,7 @@
 7. NPC 随机小行为由前端空闲表现层托管，作为可被后端行为、对话和社交锁抢占的表现资源。
 8. NPC 行为执行结果由独立 reporter 职责回传，`GameStateStore` 不再在收到目标意图时提前更新位置。
 9. `NpcBehaviorApplier` 保持薄适配，正式任务生命周期由 `NpcTaskExecutor` 承担；移动到达和动作完成是两个独立阶段。
-10. 前端保留最近任务终态快照，用于后端节点询问恢复可能丢失的结果包。
+10. 前端保留最近任务终态快照仅供 `aisc_debug` 诊断；后端节点询问、停滞检测、重发和硬超时已经删除。
 11. NPC-NPC 社交由 Unity 回报物理 READY/FAILED 和播放 COMPLETE；后端不得用预计时间推断会合或已完成对话。
 
 ## 已完成阶段
@@ -28,7 +28,7 @@
 6. NPC 行为 request/result 闭环与玩家对话 PREPARED/READY 握手。
 7. `GameCommandSender`、`GameStateStore`、`NpcBehaviorApplier`、`NpcSocialRendezvousController` 四项职责拆分。
 8. NPC 空闲表现改由前端可抢占表现层托管。
-9. NPC 统一任务执行器与 `NPC_TASK_STATUS_QUERY / STATUS` 节点检测接线。
+9. NPC 统一任务执行器与 `NPC_RUNTIME_EVENT` 非阻塞终态接线；旧 `NPC_TASK_STATUS_QUERY / STATUS` 已删除。
 10. 导航、协议、职责拆分与空闲表现的既有 Play 回归已完成。
 11. 玩家传送 / 场景入口已按职责拆分为 `PlayerTeleportController`、`PlayerLocationResolver`、`PlayerTransitionView`，并通过 Unity MCP 完成 `Town_Main` 资产连线和 Play 验证。
 12. 已新增项目专用 Unity MCP 工具 `aisc_debug`，以只读方式提供运行快照、健康报告、协议轨迹和 NPC 任务阶段，不把诊断聚合塞回 `GameManager`。
@@ -37,7 +37,7 @@
 
 ## 下一阶段建议
 
-1. Play 模式只验证本轮新增 `NpcTaskExecutor`：跨位置任务、长动作询问、run 速度和结果丢包恢复。
+1. Play 模式持续验证 `NpcTaskExecutor`：跨位置任务、长动作终态、run 速度和 Unity 权威失败恢复重规划。
 2. 评估拆 `DialogueSessionController`，承接玩家正式对话生命周期，避免继续加重 facade。
 3. 在协议和存档底座稳定后，补玩家基础 UI，并严格按 MVC 切分 Model / View / Controller。
 4. 新场景继续复用已完成的玩家传送职责和同一套 `NavigationTeleportPoint` / `SceneAnchor` 语义，不复制玩家专用入口数据。
@@ -50,7 +50,7 @@
 
 ### 正在进行
 
-1. NPC 新任务链 Play 验证：移动阶段、动作阶段、终态快照和节点询问。
+1. NPC 新任务链 Play 验证：移动阶段、动作阶段、终态快照和失败/取消后的恢复重规划。
 2. NPC affordance 第二阶段：营业时间、动态占用、替代 spot 和真实动作完成事件。
 3. 配合 `ProtocolAndSave` 工作流实现 Unity 主存档、协议客户端和重连世界快照，不把协调职责塞回 `GameManager`。
 

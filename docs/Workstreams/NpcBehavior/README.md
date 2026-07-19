@@ -31,12 +31,12 @@
 
 1. action-location-role 与 spot affordance 已进入共享配置和计划校验，但营业状态、精确时间窗和动态占用尚未接入。
 2. 前端运行时已经按任务目标移动并执行动作，但场景 spot / anchor 仍需继续细化和 Play 验证。
-3. 旧节点询问、停滞检测、硬超时和一次重发已删除；替代 spot 与按失败原因重新规划仍需另接 Unity 权威恢复策略。
+3. 旧节点询问、停滞检测、硬超时和一次重发已删除；按失败/取消/窗口错过触发的 Unity 权威恢复重规划已接入，替代 spot 仍需扩展正式候选 DTO 后实现。
 4. 现有动作表现主要仍是颜色和等待时长，尚未接入各任务真实动画完成事件。
 5. 空闲表现已从后端随机行为迁到前端，但仍需 Play 模式观察实际频率和踱步观感。
-6. NPC-NPC 社交已接入 Unity 物理候选、后端纯语义意愿和 Unity 权威 session；Unity 在接受 decision 后原子 reservation、会合并请求内容，负责超时、播放、终态释放与冷却，仍需 Play 验证跨店会合和玩家抢占。
-7. 玩家正常对话和 NPC-NPC 对话完成后都会广播 `NPC_SCHEDULE_REPLAN_CONTEXT`，Unity 再以权威剩余日程发送 `NPC_SCHEDULE_REPLAN_REQUEST`。
-8. 日程 planner 已有单 owner 120 秒超时和确定性 fallback；仍需在真实供应商与 Play Mode 下复测批次长尾和迟到结果隔离。
+6. NPC-NPC 社交已接入 Unity 物理候选、后端纯语义意愿和 Unity 权威 session；Unity 在接受 decision 后原子 reservation、会合并请求内容，负责超时、播放、终态释放与冷却。隔离状态机验收以及真实跨位置会合、玩家现场抢占、移动取消失败均已通过；自然候选/语义 decision、跨店传送和超时仍需继续 Play 验证。
+7. 两段式日计划阶段 2-5 已实现：后端生成工作/休息两个候选 ID 队列，Unity `NpcDayPlanRuntime` 是唯一生产 owner；失败、取消和互动不再触发整表 replan。真实供应商与 Play Mode 长链仍待独立测试。
+8. 玩家/NPC-NPC 普通互动不改变当日 plan；玩家明确安排只能通过 `NpcDayPlanRuntime.ApplyMutation` 的 operation/revision/segment/interrupt policy 边界裁决，真实 producer 链待独立测试取证。
 
 ## 已确认的日程优化口径
 
@@ -48,7 +48,7 @@
    - LLM 最终计划输出继续使用受控 JSON 数组，因为该结果需要严格解析、字段校验和 fallback；“输入改用标签”不等于把输出契约改成自由文本或 YAML。
 4. 日计划生成与互动后重规划共用一个深模块和统一结果契约：计划生成、时间校验、affordance 校验、排序、冲突处理、fallback、失败原因和诊断由模块内部完成，调用方只提交上下文并接收已验证计划。
 5. 每个 NPC 规划调用增加独立耗时、成功、fallback、超时和失败原因诊断；批次记录计划数、并发墙钟和最慢 owner。单请求长尾不得无限阻塞跨日，具体超时值在实施方案和真实供应商复测中确定。
-6. 补齐时间语义校验：合法 `HH:MM`、单调排序、重复时间、清醒时段覆盖、错过步骤的处理策略，以及重规划步骤与旧剩余计划的去重 / 冲突合并。
+6. 时间语义校验已覆盖合法 `HH:MM`、单调排序、重复时间，以及互动/运行时恢复 replacement 不早于冻结请求时间；清醒时段覆盖和重规划步骤与旧剩余计划的去重 / 冲突合并仍待补齐。
 7. 候选选择继续受 action-location-role affordance 约束，并逐步加入营业状态、时间窗、动态 spot 占用、天气和当前位置成本；LLM 只在合法候选中排序和组合，不负责创造新 ID。
 8. 候选 DTO 和紧凑标签按外界因素分组，至少区分 `occupation / routine / need / relationship / weather / nearby / exploration`，并携带适用天气、营业状态、合法时间窗、位置成本、目标人物和来源理由。雨天优先室内与近距离候选，晴天开放公园、河边和跨店访问；关闭或不可用 spot 在进入 Prompt 前剔除。
 9. 日计划设置傍晚社交窗口，目标为约 `16:30-18:30`，尽量让 NPC 在 `17:00` 左右结束或暂停职业任务，为相互拜访、散步、一起吃饭和偶遇留出时间。该窗口使用高权重软约束，不强制所有 NPC 同时离岗；应按店铺营业和角色职责错峰保留可接待者，避免“所有人都去拜访但没有人在店里”。
@@ -56,6 +56,7 @@
 11. 日程候选使用确认的三层决策模型：第一层按世界物理情况做确定性合法性过滤；第二层以本地图路由和语义向量检索为候选补充长期记忆证据；第三层由单次 LLM 结合当天短期记忆、证据和已协调社交机会完成语义筛选与日程组合。日程保存 evidence ID、相似度、图路径分和 trace ID，不保存 embedding 向量本体。
 12. 第二层不得因缺少记忆证据删除职业、routine、吃饭或休息等基础候选；关系、探索和个人兴趣候选可以按证据升降权或淘汰。第三层筛选与日程生成必须合并为每名 NPC 一次 LLM 调用，不得把每日调用数从 5 扩成 10。
 13. Unity 持久化同游戏日未终态消费的剩余计划，并提供 `aisc_debug.daily_schedule_snapshot`；Unity 物理社交候选、运行时状态模块和 `NpcStateEffect` base revision 拒绝已接入，完整 Play Mode 长链仍需在编辑器稳定连接下复测。
+14. Unity 日程运行时由 `NpcDailyScheduleRuntimeCoordinator` 编排，并由 `NpcScheduleReplanTracker` 独立托管重规划状态；跨日通过单一替换入口退役旧任务、旧 pending、旧关联和 controller 身份。
 
 ## 下一阶段建议
 
@@ -88,7 +89,7 @@
 1. Play 模式验证跨位置非移动任务的“移动 -> 动作 -> 成功”链。
 2. 接入营业状态、时间窗和动态 spot 占用。
 3. 补替代 spot 与按失败原因重新规划。
-4. Play 模式观察长动作节点询问、结果丢包恢复和空闲表现观感。
+4. Play 模式观察长动作终态、失败/取消恢复重规划和空闲表现观感。
 
 ### 正在计划
 
@@ -120,6 +121,8 @@
 ## 专项草案
 
 1. `ContextAwareDailyScheduleDraft.md`：外界感知候选、紧凑标签、傍晚社交协调、玩家 / NPC 互动后重规划、时间校验、fallback 与诊断的实施前设计来源。
+2. `DailySchedulePlayModeFindingsDraft.md`：记录新游戏回放旧持久日程、运行时 replan 缺冻结快照字段、pending 循环重发和跨 operation 错误污染。
+3. `TwoSegmentNpcTaskQueueDraft.md`：两段式任务队列阶段 1-5 的实现来源；生产接管和 Test 1200 秒资产修改已完成。阶段 6 发现的跨日 `PreparingUnity` 阻断已定位为仓储当前 schema 常量滞后并完成实现修复，仍待原测试记录追加有界复测，尚不代表整体上线验收通过。
 
 ## 相关执行证据
 

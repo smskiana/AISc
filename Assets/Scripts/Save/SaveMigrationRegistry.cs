@@ -24,6 +24,7 @@ public class SaveMigrationRegistry
     public SaveMigrationRegistry()
     {
         Register(new SaveMigrationV1ToV2());
+        Register(new SaveMigrationV2ToV3());
     }
 
     /// <summary>
@@ -51,6 +52,28 @@ public class SaveMigrationRegistry
             if (data.schema_version != migration.ToVersion)
                 throw new InvalidOperationException("存档迁移未写入声明的目标版本");
         }
+        return data;
+    }
+}
+
+/// <summary>退役旧分钟日程持久字段并为两段式 day plan 建立空迁移边界。</summary>
+public sealed class SaveMigrationV2ToV3 : ISaveMigration
+{
+    public int FromVersion => 2;
+    public int ToVersion => 3;
+
+    /// <summary>旧档不猜测双段队列，清空旧 owner 并等待后端重新准备当日计划。</summary>
+    public GameSaveData Migrate(GameSaveData data)
+    {
+        foreach (NpcWorldSaveData npc in data.npcs ?? new List<NpcWorldSaveData>())
+        {
+            npc.day_plan = null;
+            npc.schedule_day = 0;
+            npc.schedule_revision = 0;
+            npc.schedule_planner_version = string.Empty;
+            npc.remaining_daily_schedule = new List<NpcDailyScheduleItem>();
+        }
+        data.schema_version = ToVersion;
         return data;
     }
 }

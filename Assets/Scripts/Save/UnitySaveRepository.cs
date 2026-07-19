@@ -9,7 +9,7 @@ using System.Collections.Generic;
 /// </summary>
 public class UnitySaveRepository
 {
-    private const int CurrentSchemaVersion = 2;
+    private const int CurrentSchemaVersion = 3;
     private readonly string _rootPath;
     private readonly SaveMigrationRegistry _migrations;
 

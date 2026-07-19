@@ -22,6 +22,7 @@
 14. 后端对话、行为和记忆 Prompt 由 `backend/src/prompting/` 统一按 task 组装，角色与地点风格优先来自 profile 标签。
 15. 记忆路由策略由后端 `memory_retrieval.yaml` 按业务 mode 选择；对话调用层只提交 `RetrievalRequest`，不携带 strategy、实体或 beam 覆盖。
 16. 玩家快捷回复固定表达“玩家下一句对当前 NPC 说的话”：Prompt 使用独立 `player_name` / `npc_name`，NPC 关系与语气只作背景；确定性收口拒绝 NPC 名称前缀和开头括号动作，并由 `aisc_debug.player_reply_suggestion_snapshot` 提供有界安全 trace。
+17. 玩家普通对话和 NPC-NPC `COMPLETE` 只提交记忆、关系与状态效果，不再触发整表日程重规划；明确玩家安排必须通过有界 task mutation seam。
 
 ## 已完成阶段
 
@@ -37,6 +38,7 @@
 10. 玩家-NPC 逐轮文本刷新、结构化图检索和诊断快照已纠正：每轮使用最新发言和近期对白，图起点保持既有策略，不预查话题人物关系。
 11. 玩家、NPC-NPC 和夜间记忆检索共用后端 trace；Unity `aisc_debug.memory_retrieval_snapshot` 可按 mode / strategy 读取原问题、检索想法、单次向量、图候选和最终原子条目安全诊断。
 12. 玩家快捷回复主体契约与安全诊断已接入：真实 LLM 首轮/续轮已覆盖鹿岛樱、千早、和叶、龙之介、九条。
+13. NPC-NPC 社交协议提供隔离与真实 PlayMode 白名单验收；正常完成、玩家抢占、移动失败、终态后迟到内容，以及真实跨位置移动/播放均已通过。自然候选/语义 decision、跨店传送和超时仍需继续确认。
 
 ## 下一阶段建议
 

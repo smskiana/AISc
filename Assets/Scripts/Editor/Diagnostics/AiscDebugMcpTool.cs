@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 /// <summary>
 /// 将 AISc 运行时业务诊断能力暴露为单一项目专用 Unity MCP 工具。
 /// </summary>
-[McpForUnityTool("aisc_debug", Description = "Read-only AISc runtime diagnostics: runtime_snapshot, health_report, protocol_trace, npc_task_snapshot, npc_social_snapshot, npc_runtime_state_snapshot, daily_schedule_snapshot, conversation_retrieval_snapshot, memory_retrieval_snapshot, midnight_snapshot, player_reply_suggestion_snapshot, initial_knowledge_projection_snapshot.")]
+[McpForUnityTool("aisc_debug", Description = "Read-only AISc runtime diagnostics including daily_schedule_snapshot and interaction_replan_snapshot.")]
 public static class AiscDebugMcpTool
 {
     /// <summary>
@@ -88,6 +88,14 @@ public static class AiscDebugMcpTool
                     return new SuccessResponse(
                         "AISc daily schedule snapshot collected.",
                         AiscDiagnostics.GetDailyScheduleSnapshots(toolParams.Get("npc_id")));
+                case "day_plan_snapshot":
+                    return new SuccessResponse(
+                        "AISc day plan snapshot collected.",
+                        AiscDiagnostics.GetDayPlanSnapshots(toolParams.Get("npc_id")));
+                case "interaction_replan_snapshot":
+                    return new SuccessResponse(
+                        "AISc interaction replan snapshot collected.",
+                        AiscDiagnostics.GetInteractionReplanSnapshots(toolParams.Get("npc_id")));
                 case "conversation_retrieval_snapshot":
                     return new SuccessResponse(
                         "AISc conversation retrieval snapshot collected.",
@@ -123,7 +131,7 @@ public static class AiscDebugMcpTool
                             string.Equals(toolParams.Get("include_excluded", "false"), "true", StringComparison.OrdinalIgnoreCase)));
                 default:
                     return new ErrorResponse(
-                        "Unknown action. Valid actions: runtime_snapshot, health_report, protocol_trace, npc_task_snapshot, npc_social_snapshot, npc_runtime_state_snapshot, daily_schedule_snapshot, conversation_retrieval_snapshot, memory_retrieval_snapshot, midnight_snapshot, player_reply_suggestion_snapshot, initial_knowledge_projection_snapshot.");
+                        "Unknown action. Valid actions: runtime_snapshot, health_report, protocol_trace, npc_task_snapshot, npc_social_snapshot, npc_runtime_state_snapshot, daily_schedule_snapshot, interaction_replan_snapshot, conversation_retrieval_snapshot, memory_retrieval_snapshot, midnight_snapshot, player_reply_suggestion_snapshot, initial_knowledge_projection_snapshot.");
             }
         }
         catch (Exception error)

@@ -52,6 +52,25 @@ public sealed class NpcSocialDiagnosticSnapshot
 }
 
 /// <summary>
+/// 表示一次隔离 NPC 社交协议探针的机器可读裁决。
+/// </summary>
+[Serializable]
+public sealed class NpcSocialProbeResult
+{
+    public bool success;
+    public string scenario;
+    public string request_id;
+    public string write_scope = "isolated_in_memory_only";
+    public bool both_reserved_initially;
+    public bool both_released;
+    public bool content_accepted;
+    public bool late_content_accepted;
+    public string terminal_phase;
+    public string terminal_reason;
+    public string failure_reason;
+}
+
+/// <summary>
 /// 表示后端某一轮对话记忆检索的只读诊断快照。
 /// </summary>
 [Serializable]

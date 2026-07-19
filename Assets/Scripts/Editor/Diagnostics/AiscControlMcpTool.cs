@@ -9,7 +9,7 @@ using UnityEngine;
 /// <summary>
 /// 暴露仅编辑器可用的 AISc 白名单运行态控制能力。
 /// </summary>
-[McpForUnityTool("aisc_control", Description = "Editor-only AISc runtime controls: start_new_game, start_dialogue, send_player_choice, end_dialogue, run_midnight_settlement, request_pause_test, release_pause_test, run_memory_retrieval_probe.")]
+[McpForUnityTool("aisc_control", Description = "Editor-only AISc runtime controls including isolated daily schedule probes.")]
 public static class AiscControlMcpTool
 {
     private static readonly Dictionary<string, Func<ToolParams, object>> ActionHandlers = new()
@@ -22,6 +22,9 @@ public static class AiscControlMcpTool
         ["request_pause_test"] = _ => SetPauseTest(true),
         ["release_pause_test"] = _ => SetPauseTest(false),
         ["run_memory_retrieval_probe"] = RunMemoryRetrievalProbe,
+        ["run_daily_schedule_probe"] = RunDailyScheduleProbe,
+        ["run_npc_social_probe"] = RunNpcSocialProbe,
+        ["start_npc_social_playmode_probe"] = StartNpcSocialPlayModeProbe,
     };
 
     /// <summary>
@@ -49,6 +52,9 @@ public static class AiscControlMcpTool
 
         [ToolParameter("Optional retrieval mode.", Required = false)]
         public string mode { get; set; }
+
+        [ToolParameter("Whitelisted probe scenario for schedule or NPC social probes.", Required = false)]
+        public string scenario { get; set; }
     }
 
     /// <summary>
@@ -62,7 +68,7 @@ public static class AiscControlMcpTool
             string action = toolParams.Get("action", string.Empty).Trim().ToLowerInvariant();
             if (ActionHandlers.TryGetValue(action, out var handler))
                 return handler(toolParams);
-            return new ErrorResponse("Unknown action. Valid actions: start_new_game, start_dialogue, send_player_choice, end_dialogue, run_midnight_settlement, request_pause_test, release_pause_test, run_memory_retrieval_probe.");
+            return new ErrorResponse("Unknown action. Valid actions: start_new_game, start_dialogue, send_player_choice, end_dialogue, run_midnight_settlement, request_pause_test, release_pause_test, run_memory_retrieval_probe, run_daily_schedule_probe, run_npc_social_probe, start_npc_social_playmode_probe.");
         }
         catch (Exception error)
         {
@@ -182,6 +188,87 @@ public static class AiscControlMcpTool
         return result.success
             ? new SuccessResponse("AISc memory retrieval probe completed.", result)
             : new ErrorResponse($"AISc memory retrieval probe failed: {result.failure_reason}");
+    }
+
+    /// <summary>
+    /// 调用正式日程控制器 seam 执行白名单隔离探针，写入范围仅为临时内存对象。
+    /// </summary>
+    private static object RunDailyScheduleProbe(ToolParams parameters)
+    {
+        string scenario = parameters.Get("scenario", string.Empty);
+        DailyScheduleProbeResult result = scenario == "fixed_input_planner" || scenario == "provider_timeout"
+            ? AiscDiagnostics.RunBackendDailyScheduleProbe(scenario)
+            : AiscDiagnostics.RunDailyScheduleProbe(scenario);
+        return result.success
+            ? new SuccessResponse("AISc isolated daily schedule probe completed.", result)
+            : new ErrorResponse($"AISc daily schedule probe failed: {result.failure_reason}");
+    }
+
+    /// <summary>
+    /// 调用正式社交协议状态转移执行白名单隔离探针。
+    /// </summary>
+    private static object RunNpcSocialProbe(ToolParams parameters)
+    {
+        NpcSocialProbeResult result = AiscDiagnostics.RunNpcSocialProbe(parameters.Get("scenario", string.Empty));
+        return result.success
+            ? new SuccessResponse("AISc isolated NPC social probe completed.", result)
+            : new ErrorResponse($"AISc NPC social probe failed: {result.failure_reason}");
+    }
+
+    /// <summary>
+    /// 使用固定 NPC 与地点启动真实移动、抢占或移动取消社交长链。
+    /// </summary>
+    private static object StartNpcSocialPlayModeProbe(ToolParams parameters)
+    {
+        if (!Application.isPlaying || GameManager.Instance == null || !GameManager.Instance.IsGameplayReady)
+            return new ErrorResponse("Unity must be in ready Play Mode.");
+
+        string scenario = parameters.Get("scenario", string.Empty).Trim().ToLowerInvariant();
+        if (scenario != "cross_location_complete" && scenario != "player_preempt" && scenario != "rendezvous_failure")
+            return new ErrorResponse("Unknown NPC social PlayMode scenario.");
+
+        NpcSpawner spawner = UnityEngine.Object.FindObjectOfType<NpcSpawner>();
+        NpcEntity npcA = spawner?.GetNpc("sakura");
+        NpcEntity npcB = spawner?.GetNpc("chihaya");
+        NpcSocialProtocolController protocol = NpcSocialProtocolController.ActiveInstance;
+        if (npcA == null || npcB == null || protocol == null)
+            return new ErrorResponse("Fixed NPC social probe participants are unavailable.");
+        if (NpcSocialProtocolController.IsNpcReserved(npcA.NpcId)
+            || NpcSocialProtocolController.IsNpcReserved(npcB.NpcId))
+            return new ErrorResponse("Fixed NPC social probe participants are already reserved.");
+
+        npcA.TeleportTo("street.arcade");
+        npcB.TeleportTo("street.vending_machine");
+        string requestId = $"social_playmode_probe_{scenario}_{Guid.NewGuid():N}";
+        bool started = protocol.Begin(new NpcSocialDecisionResultMsg
+        {
+            request_id = requestId,
+            candidate_id = requestId,
+            npc_id = npcA.NpcId,
+            target_npc_id = npcB.NpcId,
+            world_revision = GameManager.Instance.WorldRevision,
+            want_to_talk = true,
+        }, "street.crossroad");
+        if (!started)
+            return new ErrorResponse("NPC social PlayMode probe was rejected by the protocol controller.");
+
+        if (scenario == "player_preempt")
+            GameManager.Instance.StartDialogue(npcA.NpcId, "street.crossroad");
+        else if (scenario == "rendezvous_failure")
+            npcA.MoveToLocation("street.bulletin_board");
+
+        return new SuccessResponse("AISc NPC social PlayMode probe started.", new
+        {
+            action = "start_npc_social_playmode_probe",
+            scenario,
+            request_id = requestId,
+            npc_id = npcA.NpcId,
+            target_npc_id = npcB.NpcId,
+            start_location_a = "street.arcade",
+            start_location_b = "street.vending_machine",
+            rendezvous_location = "street.crossroad",
+            write_scope = "current_play_session_only",
+        });
     }
 }
 #endif

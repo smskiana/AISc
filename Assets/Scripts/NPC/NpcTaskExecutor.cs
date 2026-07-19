@@ -24,7 +24,7 @@ public class NpcTaskExecutor
         if (_activeTasks.TryGetValue(msg.npc_id, out var previous))
         {
             previous.Cancelled = true;
-            _resultReporter.ReportStatus(previous.Message, "cancelled", npc.CurrentLocation, "superseded");
+            Finish(previous, "cancelled", "schedule_preempted");
         }
 
         _recentTerminalTasks.Remove(msg.npc_id);
@@ -57,6 +57,18 @@ public class NpcTaskExecutor
         {
             task.Cancelled = true;
             task.Npc.PushMotionLock(PauseSources.SleepFlow);
+            _resultReporter.ReportStatus(task.Message, "cancelled", task.Npc.CurrentLocation, reason);
+            _recentTerminalTasks[task.Message.npc_id] = task;
+        }
+        _activeTasks.Clear();
+    }
+
+    /// <summary>取消旧日日程任务并回报固定终态，不改变 NPC 的睡眠锁。</summary>
+    public void CancelScheduleTasks(string reason)
+    {
+        foreach (var task in new List<ActiveNpcTask>(_activeTasks.Values))
+        {
+            task.Cancelled = true;
             _resultReporter.ReportStatus(task.Message, "cancelled", task.Npc.CurrentLocation, reason);
             _recentTerminalTasks[task.Message.npc_id] = task;
         }
@@ -129,10 +141,12 @@ public class NpcTaskExecutor
     /// <summary>
     /// 推进阶段并增加进展版本，供后端识别任务是否持续前进。
     /// </summary>
-    private static void Advance(ActiveNpcTask task, string phase)
+    private void Advance(ActiveNpcTask task, string phase)
     {
         task.Phase = phase;
         task.ProgressRevision++;
+        if (phase == "validating" || phase == "moving" || phase == "performing")
+            _resultReporter.ReportPhase(task.Message, phase == "validating" ? "started" : phase, task.Npc.CurrentLocation);
     }
 
     /// <summary>

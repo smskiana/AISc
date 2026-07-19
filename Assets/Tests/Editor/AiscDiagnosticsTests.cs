@@ -217,4 +217,82 @@ public sealed class AiscDiagnosticsTests
         Assert.AreEqual("unavailable", snapshot.status);
         Assert.Contains("play_mode_required", snapshot.failure_reasons);
     }
+
+    /// <summary>
+    /// 白名单日程探针必须调用正式裁决 seam，并声明只写隔离内存。
+    /// </summary>
+    [TestCase("jump_to_17", "work", "work_task_continues_after_segment")]
+    [TestCase("social_lock_defer", "deferred", "npc_social_dialogue_locked")]
+    [TestCase("task_failure_replan", "", "task_terminal_consumed")]
+    public void DailyScheduleProbeReturnsStableDecision(string scenario, string decision, string reason)
+    {
+        DailyScheduleProbeResult result = AiscDiagnostics.RunDailyScheduleProbe(scenario);
+
+        Assert.IsTrue(result.success);
+        Assert.AreEqual("isolated_in_memory_only", result.write_scope);
+        Assert.AreEqual(decision, result.decision);
+        Assert.AreEqual(reason, result.reason);
+    }
+
+    /// <summary>
+    /// 迟到 revision 探针必须由正式 TryReplace 契约拒绝。
+    /// </summary>
+    [Test]
+    public void DailyScheduleLateRevisionProbeIsRejected()
+    {
+        DailyScheduleProbeResult result = AiscDiagnostics.RunDailyScheduleProbe("late_revision");
+
+        Assert.IsTrue(result.success);
+        Assert.AreEqual("rejected", result.decision);
+        Assert.AreEqual("stale_plan_revision", result.reason);
+    }
+
+    /// <summary>
+    /// 社交探针必须稳定终态化并原子释放双方 reservation。
+    /// </summary>
+    [TestCase("complete", "completed")]
+    [TestCase("player_preempt", "player_dialogue_preempted")]
+    [TestCase("rendezvous_failure", "movement_failed")]
+    [TestCase("late_content_revision", "player_dialogue_preempted")]
+    public void NpcSocialProbeReachesStableTerminalAndReleasesBoth(string scenario, string reason)
+    {
+        NpcSocialProbeResult result = AiscDiagnostics.RunNpcSocialProbe(scenario);
+
+        Assert.IsTrue(result.success, result.failure_reason);
+        Assert.AreEqual("isolated_in_memory_only", result.write_scope);
+        Assert.IsTrue(result.both_reserved_initially);
+        Assert.IsTrue(result.both_released);
+        Assert.AreEqual("terminal", result.terminal_phase);
+        Assert.AreEqual(reason, result.terminal_reason);
+        if (scenario == "late_content_revision")
+            Assert.IsFalse(result.late_content_accepted);
+    }
+
+    /// <summary>
+    /// 后端稳定 fallback seed 可超过 Int32，诊断 DTO 必须无损接收。
+    /// </summary>
+    [Test]
+    public void ScheduleOwnerTraceParsesUnsignedFallbackSeedAsString()
+    {
+        var snapshot = JsonUtility.FromJson<ScheduleOwnerDiagnosticSnapshot>(
+            "{\"fallback_seed\":\"18446744073709551615\",\"failure_reason\":\"planner_rejected:ValueError\",\"failure_detail\":\"unknown_candidate\"}");
+
+        Assert.AreEqual("18446744073709551615", snapshot.fallback_seed);
+        Assert.AreEqual("unknown_candidate", snapshot.failure_detail);
+    }
+
+    /// <summary>
+    /// 空 replan operation 不得错误关联同 NPC 的其他 owner trace。
+    /// </summary>
+    [Test]
+    public void EmptyOperationDoesNotSelectUnrelatedScheduleTrace()
+    {
+        var traces = new System.Collections.Generic.List<ScheduleOwnerDiagnosticSnapshot>
+        {
+            new ScheduleOwnerDiagnosticSnapshot { operation_id = "daily_schedule_2:owner:trace" },
+        };
+
+        Assert.IsNull(AiscDiagnostics.SelectScheduleOwnerTrace(string.Empty, traces));
+        Assert.AreSame(traces[0], AiscDiagnostics.SelectScheduleOwnerTrace("daily_schedule_2", traces));
+    }
 }

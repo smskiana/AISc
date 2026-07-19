@@ -11,6 +11,8 @@
 - `SaveMigrationRegistry`: 可扩展版本迁移链。
 - `SaveCoordinator`: 与 Python 记忆检查点协议协调。
 
-开发期临时口径：开始菜单进入新游戏前调用 `UnitySaveService.PurgeAllForNewGame`，先通过协议永久清除 Python 全部记忆检查点，再清除 Unity `SaveData` 全部正式、备份和待提交目录；任一步失败均不进入新游戏。
+当前 Unity 主存档 schema 为 3；`GameSaveData` 默认版本、`UnitySaveRepository` 写入校验目标和 `SaveMigrationRegistry` 迁移终点必须同步更新。
+
+开发期临时口径：开始菜单进入新游戏前调用 `UnitySaveService.PurgeAllForNewGame`，先通过 `new_game_backend_purge` 清除 Python 记忆检查点、可重建日程快照和日程幂等缓存，再清除 Unity `SaveData` 全部正式、备份和待提交目录；任一步失败均不进入新游戏。
 
 不得把 UI、GameObject 引用、动画进度、正在移动或对话中的临时状态写入主存档。

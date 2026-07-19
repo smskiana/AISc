@@ -27,7 +27,7 @@
 8. 导航传送点组件化。
 9. `IMovementProvider` 移动结果语义：成功、失败、取消。
 10. `NpcEntity.CurrentLocation` 改为确认到达后更新。
-11. `NPC_BEHAVIOR / NPC_ACTION_RESULT` 执行闭环已接通，后端与前端状态缓存均只在成功回报后确认位置。
+11. 正式日程候选由 Unity 内部任务命令执行，终态只通过 `NPC_RUNTIME_EVENT` 非阻塞同步；旧网络 `NPC_BEHAVIOR / NPC_ACTION_RESULT` 无生产入口。
 12. NPC 移动期间后端使用唯一 transit 位置，不属于出发地、目标地或任何其他地区。
 13. 移动成功、失败、取消已接入行为 request/result 回报，旧 request 不会覆盖新状态。
 14. 移动不再由 `walk_to` / `run_to` action 表达；任意正式任务在目标 spot 不同时通过 `movement_mode` 请求导航阶段。

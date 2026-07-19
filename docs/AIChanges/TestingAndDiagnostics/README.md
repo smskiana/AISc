@@ -4,6 +4,8 @@
 
 保存跨系统跑测、诊断、性能和迁移验证记录。
 
+本目录只接收跨系统纯跑测或诊断主题。业务功能的独立 `_test.md` 与同主题 plan / execution 放在该业务的主要功能目录，不机械集中到这里。
+
 ## 文件夹内容
 
 - 长时间跑测和复测
@@ -16,6 +18,8 @@
 - `Assets/Scripts/Diagnostics/README.md`: Unity 运行时结构化诊断模块入口。
 - `aisc_debug`: 项目专用 Unity MCP 工具；`runtime_snapshot.pause` 当前包含 Gameplay/UI/FX 分域状态、来源、`Time.timeScale` 与受管 FX 计数。
 - `aisc_control`: 仅编辑器存在的白名单 Unity MCP 控制工具；暂停回归使用固定来源的 `request_pause_test` / `release_pause_test`，不接受任意来源或时间域参数。
+
+完整工具选择顺序见 `docs/Workstreams/TestingAndDiagnostics/README.md`；本文只保存测试与诊断执行证据和当前跨系统诊断口径。
 
 ## 强制同步口径
 

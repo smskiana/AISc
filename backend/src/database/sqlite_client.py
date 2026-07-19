@@ -438,6 +438,39 @@ class SQLiteClient:
              snapshot.get("failure_reason", ""), snapshot["payload_json"]),
         )
 
+    def purge_daily_schedule_snapshots(self) -> list[dict]:
+        """在单个 SQLite 事务中返回并删除全部可重建日程快照。"""
+        with self._conn() as conn:
+            try:
+                conn.execute("BEGIN IMMEDIATE")
+                rows = [dict(row) for row in conn.execute("SELECT * FROM npc_daily_schedule_snapshots")]
+                conn.execute("DELETE FROM npc_daily_schedule_snapshots")
+                conn.commit()
+                return rows
+            except Exception:
+                conn.rollback()
+                raise
+
+    def restore_daily_schedule_snapshots(self, rows: list[dict]) -> None:
+        """在新游戏复合清理失败时恢复本次删除的日程快照。"""
+        if not rows:
+            return
+        with self._conn() as conn:
+            try:
+                conn.execute("BEGIN IMMEDIATE")
+                conn.executemany(
+                    """INSERT OR REPLACE INTO npc_daily_schedule_snapshots
+                       (game_day,npc_id,schedule_revision,payload_fingerprint,planner_version,
+                        operation_id,status,failure_reason,payload_json,updated_at)
+                       VALUES (:game_day,:npc_id,:schedule_revision,:payload_fingerprint,:planner_version,
+                        :operation_id,:status,:failure_reason,:payload_json,:updated_at)""",
+                    rows,
+                )
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+
     def fetchone(self, sql: str, params: tuple = ()) -> dict | None:
         with self._conn() as conn:
             row = conn.execute(sql, params).fetchone()

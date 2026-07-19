@@ -62,6 +62,7 @@ public class NpcVisualContext
 public class GameReadyMsg
 {
     public string type;
+    public string operation_id;
     public string mode;
     public bool fresh_start;
     public GameTime game_time;
@@ -84,6 +85,9 @@ public class NpcTaskCommand
     public string npc_id;
     public NpcBehaviorCmd behavior;
     public BehaviorContext context;
+    public string candidate_id;
+    public long schedule_revision;
+    public string miss_policy;
 }
 
 [Serializable]
@@ -353,6 +357,7 @@ public static class MessageRouter
                 cb.OnLoadComplete?.Invoke(UnityEngine.JsonUtility.FromJson<LoadCompleteMsg>(json));
                 break;
             case "NPC_DAILY_SCHEDULE_READY":
+            case "NPC_DAY_PLAN_READY":
                 cb.OnNpcDailyScheduleReady?.Invoke(UnityEngine.JsonUtility.FromJson<NpcDailyScheduleReadyMsg>(json));
                 break;
             case "NPC_BUBBLE":
@@ -372,9 +377,6 @@ public static class MessageRouter
                 break;
             case "NPC_STATE_EFFECT":
                 cb.OnNpcStateEffect?.Invoke(UnityEngine.JsonUtility.FromJson<NpcStateEffectMsg>(json));
-                break;
-            case "NPC_SCHEDULE_REPLAN_CONTEXT":
-                cb.OnNpcScheduleReplanContext?.Invoke(UnityEngine.JsonUtility.FromJson<NpcScheduleReplanContextMsg>(json));
                 break;
             case "DIALOGUE_TOKEN":
                 cb.OnDialogueToken?.Invoke(UnityEngine.JsonUtility.FromJson<DialogueTokenMsg>(json));
@@ -435,7 +437,6 @@ public class Callbacks
     public Action<NpcSocialDecisionResultMsg> OnNpcSocialDecisionResult;
     public Action<NpcSocialContentResultMsg> OnNpcSocialContentResult;
     public Action<NpcStateEffectMsg> OnNpcStateEffect;
-    public Action<NpcScheduleReplanContextMsg> OnNpcScheduleReplanContext;
     public Action<MidnightSettlementCompleteMsg> OnMidnightSettlementComplete;
     public Action<MidnightSettlementFailedMsg> OnMidnightSettlementFailed;
     public Action<WorldPreparationProgressMsg> OnWorldPreparationProgress;

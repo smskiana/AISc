@@ -27,6 +27,7 @@ from ..protocol.codec import DecodedMessage
 from ..protocol.session import ProtocolSession
 from ..save.manager import SaveManager
 from ..save.memory_checkpoint import MemoryCheckpointService
+from ..save.new_game_backend_purge import NewGameBackendPurgeError, NewGameBackendPurgeService
 from .dialogue_service import PlayerDialogueService
 from .message_bus import MessageBus
 from .operation_context import GameTimeSnapshot
@@ -49,6 +50,7 @@ class GameRuntime:
         self.midnight_coordinator: MidnightCoordinator | None = None
         self.social_decisions: NpcSocialDecisionService | None = None
         self.schedule_snapshots = ScheduleWorldSnapshotStore()
+        self.new_game_backend_purge: NewGameBackendPurgeService | None = None
 
     def require_services(self) -> AppServices:
         if self.services is None:
@@ -113,6 +115,7 @@ class GameRuntime:
         behavior.set_state_manager(state_mgr)
         behavior.set_ws_sender(self.message_bus.broadcast)
         behavior.schedule_snapshot_store = self.schedule_snapshots
+        self.new_game_backend_purge = NewGameBackendPurgeService(sqlite, memory_checkpoints, behavior)
         self.social_decisions = NpcSocialDecisionService(
             lambda request: self._decide_social_semantics(behavior, request)
         )
@@ -130,7 +133,7 @@ class GameRuntime:
         npc_dialogue = NpcDialogueManager(prompt_builder, self.message_bus.broadcast, sqlite, state_mgr)
         self.social_content = NpcSocialContentService(
             npc_dialogue,
-            completion_callback=self._broadcast_schedule_replan_context,
+            completion_callback=None,
         )
         prompt_builder.set_plan_provider(behavior.get_remaining_plan_summary)
         logger.info("NPC 对话管理器就绪")
@@ -155,7 +158,7 @@ class GameRuntime:
             vector_store,
             state_mgr,
             conversation_memory=conversation_memory,
-            schedule_replan_context_sender=self._broadcast_schedule_replan_context,
+            schedule_replan_context_sender=None,
         )
         self.world_preparation = WorldPreparationCoordinator(
             sqlite=sqlite,
@@ -236,18 +239,6 @@ class GameRuntime:
             await ws.send_json(result)
             return
 
-        if msg_type == "NPC_SCHEDULE_REPLAN_REQUEST":
-            try:
-                await ws.send_json(await self.require_services().behavior.replan_from_unity_request(msg, self.schedule_snapshots))
-            except Exception as error:
-                logger.warning("日程重规划被拒绝: %s", type(error).__name__)
-                await ws.send_json({
-                    "type": "GAME_ERROR",
-                    "request_id": msg.get("operation_id", ""),
-                    "message": f"schedule_replan_rejected:{type(error).__name__}",
-                })
-            return
-
         services = self.require_services()
         dialogue_service = self.require_dialogue_service()
 
@@ -294,23 +285,6 @@ class GameRuntime:
         if self.social_content is None:
             raise RuntimeError("NPC social content service not started")
         return self.social_content
-
-    async def _broadcast_schedule_replan_context(self, context: dict) -> None:
-        """向 Unity 广播互动后重规划上下文，由 Unity 回传权威剩余日程。"""
-        await self.message_bus.broadcast({
-            "type": "NPC_SCHEDULE_REPLAN_CONTEXT",
-            "operation_id": str(context.get("operation_id") or ""),
-            "interaction_id": str(context.get("operation_id") or ""),
-            "npc_ids": list(context.get("npc_ids") or []),
-            "participant_ids": list(context.get("participant_ids") or []),
-            "interaction_type": str(context.get("interaction_type") or ""),
-            "end_reason": str(context.get("end_reason") or ""),
-            "interaction_summary": str(context.get("interaction_summary") or ""),
-            "location_id": str(context.get("location_id") or ""),
-            "game_time": context.get("game_time") or {},
-            "state_effects": list(context.get("state_effects") or []),
-            "base_world_revision": int(context.get("base_world_revision") or 0),
-        })
 
     async def _decide_social_semantics(
         self,
@@ -465,18 +439,20 @@ class GameRuntime:
                     decoded.request_id,
                 ))
             return
-        if msg.get("type") == "memory_checkpoints_purge_all":
+        if msg.get("type") in {"new_game_backend_purge", "memory_checkpoints_purge_all"}:
             try:
-                self.require_services().memory_checkpoints.purge_all()
+                if self.new_game_backend_purge is None:
+                    raise NewGameBackendPurgeError("new_game_backend_purge_failed")
+                self.new_game_backend_purge.purge()
                 await ws.send_json(session.response(
-                    "memory_checkpoints_purged_all",
+                    "new_game_backend_purged",
                     {},
                     decoded.request_id,
                 ))
-            except Exception as error:
+            except NewGameBackendPurgeError as error:
                 await ws.send_json(session.response(
-                    "memory_checkpoints_purge_all_failed",
-                    {"reason": str(error)},
+                    "new_game_backend_purge_failed",
+                    {"reason": str(error) or "new_game_backend_purge_failed"},
                     decoded.request_id,
                 ))
             return

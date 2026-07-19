@@ -18,10 +18,15 @@ class ScheduleOwnerTrace:
     fallback_seed: int = 0
     elapsed_sec: float = 0.0
     failure_reason: str = ""
+    failure_detail: str = ""
     provider_call_not_cancelled: bool = False
     rejection_counts: dict[str, int] = field(default_factory=dict)
     memory_stats: dict[str, int] = field(default_factory=dict)
     fallback_reasons: dict[str, str] = field(default_factory=dict)
+    candidate_group_counts: dict[str, int] = field(default_factory=dict)
+    evidence_ids: list[str] = field(default_factory=list)
+    validation_status: str = "pending"
+    execution_phase: str = "candidate_build"
 
 
 class ScheduleDiagnostics:
@@ -43,4 +48,8 @@ class ScheduleDiagnostics:
         """按 operation 或 NPC 返回安全 DTO。"""
         with self._lock:
             values = list(self._items.values())
-        return [asdict(item) for item in values if (not operation_id or item.operation_id == operation_id) and (not npc_id or item.npc_id == npc_id)]
+        payloads = [asdict(item) for item in values if (not operation_id or item.operation_id.startswith(operation_id)) and (not npc_id or item.npc_id == npc_id)]
+        for payload in payloads:
+            # 稳定 seed 来自无符号哈希，跨端按十进制字符串传输，避免 Int64/JSON 精度差异。
+            payload["fallback_seed"] = str(payload["fallback_seed"])
+        return payloads

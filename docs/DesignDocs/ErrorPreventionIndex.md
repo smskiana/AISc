@@ -23,6 +23,34 @@
 
 ## 错误列表
 
+### 2026-07-19：存档 schema 版本源分叉
+
+- 一句话摘要：提升存档 schema 时必须同步 DTO 默认值、仓储当前版本和迁移链终点，并用默认新档 prepare 回归锁定三者一致。
+- 影响范围：Unity 主存档、manifest、迁移链和双端保存事务。
+- 何时优先回看：新增或调整任何 Unity 存档 schema、持久字段或 migration 前。
+- 明细：[2026-07-19_save_schema_version_sources_diverged.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-19_save_schema_version_sources_diverged.md:1)
+
+### 2026-07-19：重复字段名导致补丁命中错误类型
+
+- 一句话摘要：补丁上下文若只包含重复字段名，可能语法成功却写入错误 DTO，必须包含目标类名或唯一邻接字段。
+- 影响范围：相似 DTO、重复序列化字段和长文件局部补丁。
+- 何时优先回看：在同一文件多个类型中新增常见字段名前。
+- 明细：[2026-07-19_ambiguous_repeated_field_patch_target.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-19_ambiguous_repeated_field_patch_target.md:1)
+
+### 2026-07-19：跨语言诊断整数宽度不一致
+
+- 一句话摘要：稳定 hash/seed 可能超过有符号 Int64 且受 JSON number 精度影响，应按十进制字符串跨端传输。
+- 影响范围：诊断 DTO、revision、sequence、稳定 hash/seed 和跨端持久化整数。
+- 何时优先回看：新增或修改 Python/Unity 共用数值字段前。
+- 明细：[2026-07-19_cross_language_integer_width.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-19_cross_language_integer_width.md:1)
+
+### 2026-07-19：日程探针夹具未命中目标契约层
+
+- 一句话摘要：探针输入必须先满足前置合法性，并从正式 adapter 获取稳定 ID，否则会命中更早拒绝层或产生 fallback 假象。
+- 影响范围：日程 revision、planner provider、候选 ID 和白名单诊断探针。
+- 何时优先回看：新增需要验证特定稳定拒绝原因或固定 planner 输出的探针前。
+- 明细：[2026-07-19_schedule_probe_fixture_contract.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-19_schedule_probe_fixture_contract.md:1)
+
 ### 2026-07-17：Prompt 迁移丢失发言主体契约
 
 - 一句话摘要：把业务 Prompt 迁入数据层时，若未逐项迁移发言者、接收者和上下文方向，格式正确的输出仍可能改由 NPC 代玩家说话。

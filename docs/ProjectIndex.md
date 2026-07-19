@@ -26,7 +26,7 @@
 | 对话系统 | `docs/Workstreams/Dialogue/README.md` | `backend/src/dialogue/README.md`、`Assets/Scripts/Dialogue/README.md` | `docs/AIChanges/Dialogue/README.md` |
 | 前端架构 | `docs/Workstreams/FrontendArchitecture/README.md` | `Assets/Scripts/README.md` | `docs/AIChanges/FrontendArchitecture/README.md` |
 | 协议与存档 | `docs/Workstreams/ProtocolAndSave/README.md` | `Assets/Scripts/Protocol/README.md`、`Assets/Scripts/Save/README.md`、`backend/src/protocol/README.md`、`backend/src/save/README.md` | `docs/AIChanges/ProtocolAndIntegration/README.md` |
-| 测试与诊断 | 对应系统 Workstream 的验证要求 | `backend/tests/README.md`、`backend/scripts/README.md` | `docs/AIChanges/TestingAndDiagnostics/README.md` |
+| 测试与诊断 | `docs/Workstreams/TestingAndDiagnostics/README.md` | 按 Workstream 选择 Unity 测试、后端测试、跑测脚本或诊断工具 | `docs/AIChanges/TestingAndDiagnostics/README.md` |
 
 ## 文档功能入口
 

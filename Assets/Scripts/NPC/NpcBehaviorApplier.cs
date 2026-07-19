@@ -50,6 +50,12 @@ public class NpcBehaviorApplier
         _taskExecutor.CancelAll(reason);
     }
 
+    /// <summary>跨日换代时取消旧日活动任务，不施加睡眠流程锁。</summary>
+    public void CancelScheduleTasks(string reason)
+    {
+        _taskExecutor.CancelScheduleTasks(reason);
+    }
+
     /// <summary>
     /// 返回正式任务执行器的只读诊断快照。
     /// </summary>
@@ -100,7 +106,10 @@ public class NpcActionResultReporter
             msg.behavior?.action_id ?? string.Empty,
             ToProtocolStatus(result),
             actualLocationId ?? string.Empty,
-            reason ?? string.Empty);
+            reason ?? string.Empty,
+            "terminal",
+            msg.candidate_id ?? string.Empty,
+            msg.schedule_revision);
     }
 
     /// <summary>
@@ -118,8 +127,25 @@ public class NpcActionResultReporter
             msg.behavior?.action_id ?? string.Empty,
             status,
             actualLocationId ?? string.Empty,
-            reason ?? string.Empty);
+            reason ?? string.Empty,
+            "terminal",
+            msg.candidate_id ?? string.Empty,
+            msg.schedule_revision);
         TerminalReported?.Invoke(msg, status, reason ?? string.Empty);
+    }
+
+    /// <summary>
+    /// 非阻塞回报 Unity 已确认的任务执行阶段，不改变后端玩法事实。
+    /// </summary>
+    public void ReportPhase(NpcTaskCommand msg, string phase, string actualLocationId)
+    {
+        if (msg == null || string.IsNullOrWhiteSpace(msg.request_id))
+            return;
+        _gameManager?.SendNpcRuntimeEvent(
+            $"{msg.request_id}:{phase}", msg.request_id, msg.npc_id,
+            msg.behavior?.action_id ?? string.Empty, string.Empty,
+            actualLocationId ?? string.Empty, string.Empty, phase,
+            msg.candidate_id ?? string.Empty, msg.schedule_revision);
     }
 
     /// <summary>

@@ -190,11 +190,13 @@ Unity 资源文件名与运行时 `GameObject` 命名分开管理。
 
 执行证据规则：
 
-1. `docs/AIChanges/<功能域>/` 保存对应功能的 plan / execution。
+1. `docs/AIChanges/<功能域>/` 保存对应功能的 plan / execution / test。
 2. 日期可保留在执行证据文件名中用于审计，不得作为目录或索引分类。
 3. 跨功能记录只保存一份，按主要变更目标选择目录，其他功能入口通过引用关联。
 4. handoff 只进入 `docs/AIChanges/Archive/Handoffs/`，不作为默认查找入口。
 5. 新增功能目录时必须同步回写上级 README 和必要的总索引。
+6. 三类记录统一命名为 `YYYY-MM-DD_<主题>_plan.md`、`YYYY-MM-DD_<主题>_execution.md`、`YYYY-MM-DD_<主题>_test.md`，同主题记录在顶部互链。
+7. test 与同主题 plan / execution 放在主要功能目录；跨系统纯跑测或诊断主题才进入 `TestingAndDiagnostics/`。
 
 ## 9. 执行原则
 

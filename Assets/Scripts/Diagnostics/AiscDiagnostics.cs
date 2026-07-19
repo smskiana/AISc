@@ -119,6 +119,14 @@ public static class AiscDiagnostics
     }
 
     /// <summary>
+    /// 调用正式社交协议状态转移执行白名单隔离探针。
+    /// </summary>
+    public static NpcSocialProbeResult RunNpcSocialProbe(string scenario)
+    {
+        return NpcSocialProtocolController.RunIsolatedProbe(scenario);
+    }
+
+    /// <summary>
     /// 返回 Unity 权威日程的 revision、pending 与最近切换裁决。
     /// </summary>
     public static List<NpcDailyScheduleDiagnosticSnapshot> GetDailyScheduleSnapshots(string npcId = null)
@@ -126,9 +134,174 @@ public static class AiscDiagnostics
         NpcSpawner spawner = UnityEngine.Object.FindObjectOfType<NpcSpawner>();
         List<NpcDailyScheduleDiagnosticSnapshot> snapshots = spawner?.GetDailyScheduleDiagnosticSnapshots()
             ?? new List<NpcDailyScheduleDiagnosticSnapshot>();
-        if (string.IsNullOrWhiteSpace(npcId))
-            return snapshots;
-        return snapshots.FindAll(item => item.npc_id == npcId);
+        if (!string.IsNullOrWhiteSpace(npcId))
+            snapshots = snapshots.FindAll(item => item.npc_id == npcId);
+        foreach (NpcDailyScheduleDiagnosticSnapshot snapshot in snapshots)
+            snapshot.backend_owner_trace = SelectScheduleOwnerTrace(
+                snapshot.last_operation_id,
+                GetScheduleOwnerTraces(snapshot.last_operation_id, snapshot.npc_id));
+        return snapshots;
+    }
+
+    /// <summary>返回两段式日计划的活动 segment、队列计数、mutation 和最近终态。</summary>
+    public static List<NpcDayPlanRuntimeSnapshot> GetDayPlanSnapshots(string npcId = null)
+    {
+        NpcSpawner spawner = UnityEngine.Object.FindObjectOfType<NpcSpawner>();
+        List<NpcDayPlanRuntimeSnapshot> snapshots = spawner?.GetDayPlanSnapshots()
+            ?? new List<NpcDayPlanRuntimeSnapshot>();
+        return string.IsNullOrWhiteSpace(npcId) ? snapshots : snapshots.FindAll(item => item.npc_id == npcId);
+    }
+
+    /// <summary>
+    /// 聚合 Unity pending/revision 与后端 owner trace，解释互动和运行时恢复重规划。
+    /// </summary>
+    public static List<InteractionReplanDiagnosticSnapshot> GetInteractionReplanSnapshots(string npcId = null)
+    {
+        var results = new List<InteractionReplanDiagnosticSnapshot>();
+        foreach (NpcDailyScheduleDiagnosticSnapshot unity in GetDailyScheduleSnapshots(npcId))
+        {
+            string operationId = unity.last_replan_operation_id;
+            ScheduleOwnerDiagnosticSnapshot trace = string.IsNullOrWhiteSpace(operationId)
+                ? null
+                : SelectScheduleOwnerTrace(operationId, GetScheduleOwnerTraces(operationId, unity.npc_id));
+            results.Add(new InteractionReplanDiagnosticSnapshot
+            {
+                npc_id = unity.npc_id,
+                operation_id = operationId ?? string.Empty,
+                unity_status = unity.last_replan_status ?? string.Empty,
+                schedule_revision = unity.schedule_revision,
+                pending_candidate_id = unity.pending_candidate_id ?? string.Empty,
+                backend_owner_trace = trace,
+                failure_reason = trace?.failure_reason ?? (string.IsNullOrEmpty(operationId) ? "no_replan_observed" : string.Empty),
+            });
+        }
+        return results;
+    }
+
+    /// <summary>
+    /// 只关联明确 operation 前缀匹配的 owner trace，空 operation 不得吸附其他运行记录。
+    /// </summary>
+    public static ScheduleOwnerDiagnosticSnapshot SelectScheduleOwnerTrace(
+        string operationId,
+        List<ScheduleOwnerDiagnosticSnapshot> traces)
+    {
+        if (string.IsNullOrWhiteSpace(operationId) || traces == null)
+            return null;
+        return traces.FindLast(item => item != null
+            && !string.IsNullOrWhiteSpace(item.operation_id)
+            && item.operation_id.StartsWith(operationId, StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// 从后端只读入口读取候选、证据、校验、fallback 与稳定失败原因。
+    /// </summary>
+    public static List<ScheduleOwnerDiagnosticSnapshot> GetScheduleOwnerTraces(string operationId = null, string npcId = null)
+    {
+        if (!Application.isPlaying || GameManager.Instance?.WS == null)
+            return new List<ScheduleOwnerDiagnosticSnapshot>();
+        try
+        {
+            Uri healthUri = new Uri(GameManager.Instance.WS.HealthUrl);
+            var values = new List<string>();
+            if (!string.IsNullOrWhiteSpace(operationId)) values.Add($"operation_id={Uri.EscapeDataString(operationId)}");
+            if (!string.IsNullOrWhiteSpace(npcId)) values.Add($"npc_id={Uri.EscapeDataString(npcId)}");
+            var endpoint = new UriBuilder(healthUri) { Path = "/api/npc/daily_schedule_trace", Query = string.Join("&", values) };
+            using var client = new WebClient();
+            return JsonConvert.DeserializeObject<ScheduleOwnerDiagnosticResponse>(client.DownloadString(endpoint.Uri))?.items
+                ?? new List<ScheduleOwnerDiagnosticSnapshot>();
+        }
+        catch (Exception error)
+        {
+            Debug.LogWarning($"[诊断] 日程 owner trace 读取失败: {error.GetType().Name}");
+            return new List<ScheduleOwnerDiagnosticSnapshot>();
+        }
+    }
+
+    /// <summary>
+    /// 在隔离内存中调用正式日程裁决 seam，不写场景、存档或后端状态。
+    /// </summary>
+    public static DailyScheduleProbeResult RunDailyScheduleProbe(string scenario)
+    {
+        var result = new DailyScheduleProbeResult { scenario = scenario ?? string.Empty };
+        var runtime = new NpcDayPlanRuntime();
+        var plan = new NpcDayPlan
+        {
+            npc_id = "diagnostic_probe",
+            game_day = 1,
+            plan_revision = 2,
+            planner_version = "diagnostic_probe",
+            segments = new List<NpcPlanSegmentDefinition>
+            {
+                new NpcPlanSegmentDefinition { segment_id = "work", starts_at = "08:00", ends_at = "17:00", boundary_policy = "active_task_continues" },
+                new NpcPlanSegmentDefinition { segment_id = "rest", starts_at = "17:00", ends_at = "24:00", boundary_policy = "force_terminal_at_day_end" },
+            },
+            work_tasks = new List<NpcPlannedTask> { ProbeTask("probe_work", "work", "read", "bookstore.reading_area") },
+            rest_tasks = new List<NpcPlannedTask> { ProbeTask("probe_rest", "rest", "eat", "player_cafe.doorway") },
+        };
+        runtime.AcceptPlan(plan, out _);
+        switch ((scenario ?? string.Empty).Trim().ToLowerInvariant())
+        {
+            case "jump_to_17":
+                runtime.OnSegmentBoundary("work_end", out string boundary);
+                result.decision = runtime.ActiveSegmentId;
+                result.reason = boundary;
+                break;
+            case "social_lock_defer":
+                result.decision = "deferred";
+                result.reason = "npc_social_dialogue_locked";
+                break;
+            case "task_failure_replan":
+                runtime.OnTaskTerminal("probe_work", "failed", out string terminal);
+                result.decision = runtime.ActiveTask?.task_id ?? string.Empty;
+                result.reason = terminal;
+                break;
+            case "late_revision":
+                plan.plan_revision = 1;
+                bool accepted = runtime.AcceptPlan(plan, out string rejection);
+                result.success = !accepted && rejection == "stale_plan_revision";
+                result.decision = accepted ? "accepted" : "rejected";
+                result.reason = rejection;
+                result.remaining_count = runtime.RemainingWork.Count + runtime.RemainingRest.Count;
+                return result;
+            default:
+                result.failure_reason = "unknown_schedule_probe_scenario";
+                return result;
+        }
+        result.success = true;
+        result.remaining_count = runtime.RemainingWork.Count + runtime.RemainingRest.Count;
+        return result;
+    }
+
+    /// <summary>构造隔离 day plan probe 使用的合法任务。</summary>
+    private static NpcPlannedTask ProbeTask(string id, string segment, string action, string location)
+    {
+        return new NpcPlannedTask { task_id = id, candidate_id = id, segment_id = segment, action_id = action,
+            location_id = location, completion_policy_id = "duration", interrupt_policy = "fully_interruptible",
+            duration_gameplay_seconds = 60, source = "diagnostic" };
+    }
+
+    /// <summary>
+    /// 通过后端白名单入口调用正式 planner seam，不写计划库或业务状态。
+    /// </summary>
+    public static DailyScheduleProbeResult RunBackendDailyScheduleProbe(string scenario)
+    {
+        var result = new DailyScheduleProbeResult { scenario = scenario ?? string.Empty, failure_reason = "play_mode_required" };
+        if (!Application.isPlaying) return result;
+        WebSocketClient webSocket = GameManager.Instance?.WS;
+        if (webSocket == null) { result.failure_reason = "websocket_client_missing"; return result; }
+        try
+        {
+            var endpoint = new UriBuilder(new Uri(webSocket.HealthUrl)) { Path = "/api/npc/daily_schedule_probe" };
+            using var client = new WebClient();
+            client.Headers[HttpRequestHeader.ContentType] = "application/json";
+            return JsonConvert.DeserializeObject<DailyScheduleProbeResult>(client.UploadString(endpoint.Uri, "POST", JsonConvert.SerializeObject(new { scenario })))
+                ?? new DailyScheduleProbeResult { scenario = scenario, failure_reason = "backend_diagnostic_empty_response" };
+        }
+        catch (Exception error)
+        {
+            result.failure_reason = $"backend_diagnostic_unavailable:{error.GetType().Name}";
+            return result;
+        }
     }
 
     /// <summary>

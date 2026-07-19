@@ -14,6 +14,10 @@
 
 当前口径优先看 `docs/Workstreams/NpcBehavior/README.md`。
 
+两段式任务队列分阶段执行方案：`2026-07-19_NPC两段式任务队列_plan.md`；累计执行记录：`2026-07-19_NPC两段式任务队列_execution.md`；独立测试记录：`2026-07-19_NPC两段式任务队列_test.md`。阶段 1-5 已实现并通过实现期最低门禁，Unity 已切换为单 owner，旧 replan 生产链已清零；阶段 6 的跨日存档 schema 阻断已通过真实复测，day 2 可解除暂停并推进任务。当前仍缺同日读档和玩家四类 mutation 的真实 PlayMode 证据，整体保持部分通过。
+
+真实 PlayMode 日程缺口收口方案：`2026-07-19_NPC日程PlayMode缺口收口_plan.md`；原实现记录：`2026-07-19_NPC日程PlayMode缺口收口_execution.md`；测试与有界复测记录：`2026-07-19_NPC日程PlayMode缺口收口_test.md`；世界准备终态修复记录：`2026-07-19_NPC日程世界准备终态修复_execution.md`；成功 replacement 过期步骤修复记录：`2026-07-19_NPC日程过期replacement修复_execution.md`。原跨日 `entering_world` 悬挂已通过真实 Play Mode 复测；其他原 test 标记为部分通过的互动 replan、同日重启回放仍保持未覆盖。
+
 当前社交闭环证据：`docs/AIChanges/ProtocolAndIntegration/2026-07-14_NPC社交协议闭环_execution.md`。
 
 ## 外界感知日程与互动重规划
@@ -32,5 +36,7 @@
 4. `2026-07-18_日程三层候选与记忆证据深化_plan.md`：完成物理过滤、图/向量证据、单次 LLM、最终校验与 fallback。
 5. `2026-07-18_Unity日程执行压缩与重规划收口_plan.md`：完成 Unity 原子抢占、失败语义、17:00 压缩和局部重规划。
 6. `2026-07-18_NPC日程诊断验收与协议清零_plan.md`：补齐诊断/控制探针、端到端验收、协议清零和索引更新。
+
+诊断与协议清零已完成代码、快速回归和静态协议审计；真实 PlayMode 长链因后端未连接且当前无 PlayMode 用例保持未完成，详见 `2026-07-18_NPC日程诊断验收与协议清零_execution.md`。
 
 日程三层候选与记忆证据深化已完成：`2026-07-18_日程三层候选与记忆证据深化_execution.md`。物理过滤、按组复用 retrieval evidence、单 owner 单次 LLM、整体校验、确定性 fallback 和只读 trace 已接入；跨 NPC 傍晚协调与 Unity 执行压缩仍按后续执行案处理。

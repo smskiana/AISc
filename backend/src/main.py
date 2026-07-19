@@ -231,6 +231,14 @@ async def daily_schedule_trace(operation_id: str | None = None, npc_id: str | No
     return JSONResponse({"count": len(items), "items": items})
 
 
+@app.post("/api/npc/daily_schedule_probe")
+async def daily_schedule_probe(req: dict):
+    """执行固定输入或超时白名单 planner 探针，写入范围仅为隔离内存。"""
+    from .npc.schedule_probe import run_daily_schedule_probe
+    payload = await run_daily_schedule_probe(str(req.get("scenario") or ""))
+    return JSONResponse(payload, status_code=200 if payload.get("success") else 400)
+
+
 @app.get("/api/memory/midnight_snapshot")
 async def midnight_snapshot():
     """返回当前或最近一次午夜维护的结构化阶段与结果。"""

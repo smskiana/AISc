@@ -18,6 +18,7 @@ class ScheduleCandidate:
     groups: tuple[str, ...]
     relevance: float
     suggested_start_time: str
+    required_group_id: str = ""
     target_person_id: str = ""
     evidence_ids: tuple[str, ...] = ()
     rejection_reason: str = ""
@@ -34,6 +35,11 @@ class ScheduleCandidate:
     evidence_similarity: float = 0.0
     graph_path_score: float = 0.0
     retrieval_trace_ids: tuple[str, ...] = ()
+    segment_id: str = ""
+    completion_policy_id: str = ""
+    interrupt_policy: str = ""
+    duration_gameplay_seconds: int = 0
+    lifecycle_action: bool = False
 
 
 class ScheduleCandidateBuilder:
@@ -59,6 +65,12 @@ class ScheduleCandidateBuilder:
 
     def _candidate(self, npc_id, action_id, location_id, routine_keys, physical_state):
         """投影一个候选的物理约束与可解释相关度。"""
+        metadata = self._catalog.task_runtime_metadata(action_id)
+        if metadata.get("lifecycle_action"):
+            return None, "lifecycle_action_not_queueable"
+        segment_id = str(metadata.get("segment_id") or "")
+        if segment_id == "both":
+            segment_id = "work" if (action_id, location_id) in routine_keys or action_id.startswith("work_") else "rest"
         hour, minute = routine_keys.get((action_id, location_id), (17 if action_id == "visit" else 13, 0))
         group = self._group(action_id, (action_id, location_id) in routine_keys)
         necessity = "required" if action_id in {"eat", "sleep", "work_open", "work_close"} else ("important" if group in {"occupation", "routine", "need"} else "optional")
@@ -91,7 +103,8 @@ class ScheduleCandidateBuilder:
         if weather in {"rain", "rainy"} and not (location.get("outdoor") or "park" in location_id):
             components["weather"] = 0.05
         stable = hashlib.sha256(f"{npc_id}|{action_id}|{location_id}".encode()).hexdigest()[:16]
-        return ScheduleCandidate(stable, action_id, location_id, necessity, group, (group,), sum(components.values()), f"{hour:02d}:{minute:02d}", role="worker" if group == "occupation" else "self", legal_start_minute=int(location.get("open_minute", 0) or 0), legal_end_minute=int(location.get("close_minute", 1439) or 1439), weather=allowed_weather, business_state=business, spot_state=spot_state, reachable_state=reachable, position_cost=position_cost, source_reason="routine" if (action_id, location_id) in routine_keys else "affordance", relevance_components=components), ""
+        required_group_id = f"{group}:{action_id}" if necessity == "required" else ""
+        return ScheduleCandidate(stable, action_id, location_id, necessity, group, (group,), sum(components.values()), f"{hour:02d}:{minute:02d}", required_group_id=required_group_id, role="worker" if group == "occupation" else "self", legal_start_minute=int(location.get("open_minute", 0) or 0), legal_end_minute=int(location.get("close_minute", 1439) or 1439), weather=allowed_weather, business_state=business, spot_state=spot_state, reachable_state=reachable, position_cost=position_cost, source_reason="routine" if (action_id, location_id) in routine_keys else "affordance", relevance_components=components, segment_id=segment_id, completion_policy_id=str(metadata.get("completion_policy_id") or ""), interrupt_policy=str(metadata.get("interrupt_policy") or ""), duration_gameplay_seconds=int(metadata.get("duration_gameplay_seconds") or 0), lifecycle_action=False), ""
 
     @staticmethod
     def _ensure_group_seats(candidates: list[ScheduleCandidate]) -> list[ScheduleCandidate]:
@@ -133,7 +146,16 @@ def deterministic_fallback(candidates: list[ScheduleCandidate], game_day: int, n
     rank = {"required": 0, "important": 1, "optional": 2}
     decorated = [(rank[item.necessity], -item.relevance, rng.random(), item) for item in candidates]
     decorated.sort(key=lambda value: value[:3])
-    selected = [item for _, _, _, item in decorated[:target_count]]
+    required_by_group: dict[str, ScheduleCandidate] = {}
+    for _, _, _, item in decorated:
+        if item.required_group_id and item.required_group_id not in required_by_group:
+            required_by_group[item.required_group_id] = item
+    if len(required_by_group) > 10:
+        raise ValueError("required_group_count_out_of_range")
+    selected = list(required_by_group.values())
+    selected_ids = {item.candidate_id for item in selected}
+    selected.extend(item for _, _, _, item in decorated if item.candidate_id not in selected_ids)
+    selected = selected[:max(target_count, len(required_by_group))]
     reasons = {item.candidate_id: ("selected_required" if item.necessity == "required" else "selected_ranked") for item in selected}
     reasons.update({item.candidate_id: "omitted_target_limit" for _, _, _, item in decorated[target_count:]})
     selected.sort(key=lambda item: item.suggested_start_time)

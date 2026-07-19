@@ -2,7 +2,7 @@
 NPC 行为语义引擎。
 
 Unity 是 NPC 位置、P0/need/运行时状态、物理社交候选和任务终态的权威。
-本模块只保留日程生成/互动后重规划 facade、社交语义意愿和少量对话上下文读取。
+本模块只保留两段式日计划生成、社交语义意愿和少量对话上下文读取。
 """
 from __future__ import annotations
 
@@ -20,9 +20,8 @@ from ..prompting.tag_formatter import format_npc
 from ..application.operation_context import BrainOperationContext, GameTimeSnapshot
 from .daily_schedule import (
     DailyScheduleBatchRequest,
-    DailyScheduleItem,
     DailySchedulePlanner,
-    InteractionReplanRequest,
+    NpcPlannedTask,
     NpcScheduleRequest,
 )
 from .task_catalog import NpcTaskCatalog
@@ -191,42 +190,52 @@ class BehaviorEngine:
         return False
 
     async def replan_from_unity_request(self, payload: dict, snapshot_store=None) -> dict:
-        """仅按 Unity 权威剩余计划和冻结快照生成一个可整体替换的重规划结果。"""
+        """稳定拒绝已退役的整表重规划协议，避免形成第二 owner。"""
+        raise ValueError("legacy_schedule_replan_retired")
+        """以下旧实现仅在迁移提交历史中保留，不再可达。"""
         game_time = GameTimeSnapshot.from_dict(payload.get("game_time") or {})
         npc_id = str(payload.get("npc_id") or "")
+        operation_id = str(payload.get("operation_id") or "")
         if not npc_id:
             raise ValueError("replan_npc_id_missing")
+        if not operation_id:
+            raise ValueError("replan_operation_id_missing")
+        if int(payload.get("base_schedule_revision", 0)) < 1:
+            raise ValueError("replan_base_revision_invalid")
+        if snapshot_store is None:
+            raise ValueError("schedule_snapshot_store_missing")
         remaining = tuple(
-            DailyScheduleItem(
+            NpcPlannedTask(
                 candidate_id=str(item.get("candidate_id") or ""),
                 action_id=str(item.get("action_id") or ""),
                 location_id=str(item.get("location_id") or ""),
                 target_person_id=str(item.get("target_person_id") or ""),
-                planned_start_time=str(item.get("planned_start_time") or ""),
+                segment_id=str(item.get("segment_id") or ""),
+                completion_policy_id=str(item.get("completion_policy_id") or ""),
+                interrupt_policy=str(item.get("interrupt_policy") or ""),
+                duration_gameplay_seconds=int(item.get("duration_gameplay_seconds") or 0),
                 necessity=str(item.get("necessity") or "optional"),
                 primary_group=str(item.get("primary_group") or ""),
                 groups=tuple(item.get("groups") or ()),
                 evidence_ids=tuple(item.get("evidence_ids") or ()),
-                execution_window_before_minutes=int(item.get("execution_window_before_minutes", 30)),
-                execution_window_after_minutes=int(item.get("execution_window_after_minutes", 30)),
                 source=str(item.get("source") or ""),
-                miss_policy=str(item.get("miss_policy") or "skip_next"),
             )
             for item in (payload.get("remaining_schedule") or [])
         )
-        snapshot = snapshot_store.require(str(payload.get("snapshot_id") or ""), int(payload.get("time_revision", -1)), int(payload.get("world_revision", -1))) if snapshot_store else None
+        snapshot = snapshot_store.require(str(payload.get("snapshot_id") or ""), int(payload.get("time_revision", -1)), int(payload.get("world_revision", -1)))
+        if int(snapshot.game_time.get("day", 0)) != game_time.day:
+            raise ValueError("schedule_snapshot_day_mismatch")
         owner = NpcScheduleRequest(
             npc_id=npc_id,
             profile=self._load_npc_profile(npc_id),
             routines=tuple(self._routines.get(npc_id, ())),
-            physical_state=snapshot.physical_state_for(npc_id) if snapshot else dict(payload.get("physical_state") or {}),
+            physical_state=snapshot.physical_state_for(npc_id),
             plan_context=self._get_plan_context(npc_id),
             base_schedule_revision=int(payload.get("base_schedule_revision", 0)),
         )
-        result = await self._daily_schedule_planner.replan_after_interaction(
-            InteractionReplanRequest(
+        replan_request = InteractionReplanRequest(
                 context=BrainOperationContext(
-                    operation_id=str(payload.get("operation_id") or f"schedule_replan_{uuid.uuid4().hex}"),
+                    operation_id=operation_id,
                     game_time=game_time,
                     world_revision=int(payload.get("world_revision", 0)),
                 ),
@@ -237,24 +246,26 @@ class BehaviorEngine:
                 interaction_summary=str(payload.get("interaction_summary") or ""),
                 remaining_schedule=remaining,
             )
-        )
-        payload = [self._serialize_schedule_item(item) for item in result.items]
+        result = await (self._daily_schedule_planner.replan_after_runtime_recovery(replan_request)
+                        if str(payload.get("end_reason") or "") == "runtime_recovery"
+                        else self._daily_schedule_planner.replan_after_interaction(replan_request))
+        payload = self._serialize_day_plan(result)
         self.db.save_daily_schedule_snapshot({
             "game_day": result.game_day, "npc_id": result.npc_id,
-            "schedule_revision": result.schedule_revision,
+            "schedule_revision": result.plan_revision,
             "payload_fingerprint": self._schedule_fingerprint(payload),
             "planner_version": result.planner_version, "operation_id": result.operation_id,
             "status": result.status, "failure_reason": result.failure_reason,
             "payload_json": json.dumps(payload, ensure_ascii=False, sort_keys=True),
         })
         return {
-            "type": "NPC_DAILY_SCHEDULE_READY",
+            "type": "NPC_DAY_PLAN_READY",
             "operation_id": result.operation_id,
             "npc_id": result.npc_id,
             "game_day": result.game_day,
-            "schedule_revision": result.schedule_revision,
+            "plan_revision": result.plan_revision,
             "planner_version": result.planner_version,
-            "items": payload,
+            **payload,
             "status": result.status,
             "failure_reason": result.failure_reason,
         }
@@ -307,21 +318,22 @@ class BehaviorEngine:
             # 进程重启后先从 SQLite 恢复，只有不存在权威快照时才调用 planner。
             persisted = [self.db.get_daily_schedule_snapshot(game_day, npc_id)
                          for npc_id in ("sakura", "chihaya", "kazuha", "tatsunosuke", "kujo")]
-            if all(persisted):
-                for snapshot in persisted:
-                    items = json.loads(snapshot["payload_json"])
+            persisted_payloads = [json.loads(snapshot["payload_json"]) if snapshot else None for snapshot in persisted]
+            if all(isinstance(payload, dict) and "work_tasks" in payload and "rest_tasks" in payload
+                   for payload in persisted_payloads):
+                for snapshot, payload in zip(persisted, persisted_payloads):
                     self._plans[snapshot["npc_id"]] = [
-                        {"time": item.get("planned_start_time", ""), "action": item.get("action_id", ""),
+                        {"action": item.get("action_id", ""),
                          "location": item.get("location_id", "")}
-                        for item in items
+                        for item in payload.get("work_tasks", []) + payload.get("rest_tasks", [])
                     ]
                     if self._ws_sender:
                         await self._ws_sender({
-                            "type": "NPC_DAILY_SCHEDULE_READY",
+                            "type": "NPC_DAY_PLAN_READY",
                             "operation_id": snapshot["operation_id"],
                             "npc_id": snapshot["npc_id"], "game_day": game_day,
-                            "schedule_revision": snapshot["schedule_revision"],
-                            "planner_version": snapshot["planner_version"], "items": items,
+                            "plan_revision": snapshot["schedule_revision"],
+                            "planner_version": snapshot["planner_version"], **payload,
                             "status": "idempotent_replay", "failure_reason": "",
                         })
                 self._prepared_days.add(game_day)
@@ -367,26 +379,26 @@ class BehaviorEngine:
         for result in batch.results:
             # 迁移期只读映射供尚未切换的上下文摘要使用，不再作为权威剩余计划。
             self._plans[result.npc_id] = [
-                {"time": item.planned_start_time, "action": item.action_id, "location": item.location_id}
-                for item in result.items
+                {"action": item.action_id, "location": item.location_id}
+                for item in result.work_tasks + result.rest_tasks
             ]
             if self._ws_sender:
                 await self._ws_sender({
-                    "type": "NPC_DAILY_SCHEDULE_READY",
+                    "type": "NPC_DAY_PLAN_READY",
                     "operation_id": result.operation_id,
                     "npc_id": result.npc_id,
                     "game_day": result.game_day,
-                    "schedule_revision": result.schedule_revision,
+                    "plan_revision": result.plan_revision,
                     "planner_version": result.planner_version,
-                    "items": [self._serialize_schedule_item(item) for item in result.items],
+                    **self._serialize_day_plan(result),
                     "status": result.status,
                     "failure_reason": result.failure_reason,
                 })
-            payload = [self._serialize_schedule_item(item) for item in result.items]
+            payload = self._serialize_day_plan(result)
             self.db.save_daily_schedule_snapshot({
                 "game_day": result.game_day,
                 "npc_id": result.npc_id,
-                "schedule_revision": result.schedule_revision,
+                "schedule_revision": result.plan_revision,
                 "payload_fingerprint": self._schedule_fingerprint(payload),
                 "planner_version": result.planner_version,
                 "operation_id": result.operation_id,
@@ -417,23 +429,36 @@ class BehaviorEngine:
     def _serialize_schedule_item(item) -> dict:
         """把 planner DTO 转换为稳定 snake_case 协议字段。"""
         return {
+            "task_id": item.candidate_id,
             "candidate_id": item.candidate_id,
             "action_id": item.action_id,
             "location_id": item.location_id,
             "target_person_id": item.target_person_id,
-            "planned_start_time": item.planned_start_time,
-            "execution_window_before_minutes": item.execution_window_before_minutes,
-            "execution_window_after_minutes": item.execution_window_after_minutes,
+            "segment_id": item.segment_id,
+            "completion_policy_id": item.completion_policy_id,
+            "interrupt_policy": item.interrupt_policy,
+            "duration_gameplay_seconds": item.duration_gameplay_seconds,
             "necessity": item.necessity,
             "primary_group": item.primary_group,
             "groups": list(item.groups),
             "evidence_ids": list(item.evidence_ids),
             "source": item.source,
-            "miss_policy": item.miss_policy,
+            "lifecycle_action": False,
+        }
+
+    @classmethod
+    def _serialize_day_plan(cls, result) -> dict:
+        """序列化完整双段计划，指纹覆盖身份、阶段和两个有序队列。"""
+        return {
+            "segments": [{"segment_id": item.segment_id, "starts_at": item.starts_at,
+                          "ends_at": item.ends_at, "boundary_policy": item.boundary_policy}
+                         for item in result.segments],
+            "work_tasks": [cls._serialize_schedule_item(item) for item in result.work_tasks],
+            "rest_tasks": [cls._serialize_schedule_item(item) for item in result.rest_tasks],
         }
 
     @staticmethod
-    def _schedule_fingerprint(items: list[dict]) -> str:
+    def _schedule_fingerprint(items: dict) -> str:
         """按完整 DTO 计算稳定指纹，避免同 revision 内容漂移。"""
         encoded = json.dumps(items, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
@@ -673,6 +698,7 @@ class BehaviorEngine:
         seen.add(event_id)
         self._runtime_event_ids = seen
         result = str(msg.get("result") or "")
-        if result in {"succeeded", "failed", "cancelled"}:
-            logger.info("Unity 运行时事件: npc=%s result=%s event=%s", npc_id, result, event_id)
+        phase = str(msg.get("phase") or "terminal")
+        if phase in {"started", "moving", "performing", "terminal"}:
+            logger.info("Unity 运行时事件: npc=%s phase=%s result=%s candidate=%s event=%s", npc_id, phase, result, msg.get("candidate_id", ""), event_id)
         return {"accepted": True, "reason": "runtime_event_recorded"}

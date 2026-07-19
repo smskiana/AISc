@@ -20,6 +20,7 @@ public sealed class UnitySaveService : IDisposable
     public string ActiveCheckpointId => _coordinator.ActiveCheckpointId;
     public bool IsPurgingForNewGame { get; private set; }
     public string LastNewGamePurgeError { get; private set; } = string.Empty;
+    public NpcScheduleSnapshotReference AcceptedScheduleSnapshotReference { get; private set; }
 
     private readonly WebSocketClient _webSocket;
     private readonly GameStateStore _stateStore;
@@ -34,6 +35,8 @@ public sealed class UnitySaveService : IDisposable
     private string _pendingDisplayName;
     private bool _pendingIsAuto;
     private string _pendingDeleteSlot;
+    private string _worldSnapshotRequestId;
+    private NpcScheduleSnapshotReference _pendingScheduleSnapshotReference;
 
     /// <summary>
     /// 绑定协议连接、运行状态和 Unity 本地仓储。
@@ -169,7 +172,7 @@ public sealed class UnitySaveService : IDisposable
         IsPurgingForNewGame = true;
         LastNewGamePurgeError = string.Empty;
         _requestId = $"req_{Guid.NewGuid():N}";
-        Send("memory_checkpoints_purge_all", new JObject());
+        Send("new_game_backend_purge", new JObject());
     }
 
     /// <summary>
@@ -188,6 +191,13 @@ public sealed class UnitySaveService : IDisposable
         if (envelope.type == "hello_ack")
         {
             SendWorldSnapshot();
+            return;
+        }
+        if (envelope.type == "world_snapshot_applied" && envelope.request_id == _worldSnapshotRequestId)
+        {
+            AcceptedScheduleSnapshotReference = _pendingScheduleSnapshotReference;
+            _pendingScheduleSnapshotReference = null;
+            _worldSnapshotRequestId = null;
             return;
         }
         if (envelope.request_id != _requestId) return;
@@ -251,7 +261,7 @@ public sealed class UnitySaveService : IDisposable
                 DeleteFinished?.Invoke(deletedSlot, true, string.Empty);
                 return;
             }
-            if (envelope.type == "memory_checkpoints_purged_all")
+            if (envelope.type == "new_game_backend_purged" || envelope.type == "memory_checkpoints_purged_all")
             {
                 try
                 {
@@ -277,7 +287,7 @@ public sealed class UnitySaveService : IDisposable
                     _pendingDeleteSlot = null;
                     DeleteFinished?.Invoke(failedSlot, false, reason);
                 }
-                else if (envelope.type == "memory_checkpoints_purge_all_failed")
+                else if (envelope.type == "new_game_backend_purge_failed" || envelope.type == "memory_checkpoints_purge_all_failed")
                 {
                     IsPurgingForNewGame = false;
                     LastNewGamePurgeError = reason;
@@ -347,9 +357,17 @@ public sealed class UnitySaveService : IDisposable
         payload.Remove("slot_id");
         payload["checkpoint_id"] = checkpointId;
         // 日程物理字段只来自 Unity 当前运行时存档；未知动态事实不伪造可用性。
+        string snapshotId = $"world_{currentTime.day}_{currentTime.hour}_{currentTime.minute}_{Guid.NewGuid():N}";
+        _pendingScheduleSnapshotReference = new NpcScheduleSnapshotReference
+        {
+            snapshot_id = snapshotId,
+            time_revision = data.world_revision,
+            world_revision = data.world_revision,
+            game_day = currentTime.day,
+        };
         payload["npc_schedule_physical_state"] = new JObject
         {
-            ["snapshot_id"] = $"world_{currentTime.day}_{currentTime.hour}_{currentTime.minute}_{Guid.NewGuid():N}",
+            ["snapshot_id"] = snapshotId,
             ["time_revision"] = data.world_revision,
             ["world_revision"] = data.world_revision,
             ["game_time"] = JObject.FromObject(currentTime),
@@ -358,9 +376,10 @@ public sealed class UnitySaveService : IDisposable
             ["spots"] = new JArray(),
             ["npcs"] = payload["npcs"] ?? new JArray()
         };
+        _worldSnapshotRequestId = $"req_{Guid.NewGuid():N}";
         _webSocket.Send(_webSocket.Protocol.CreateEnvelope(
             "world_snapshot",
-            $"req_{Guid.NewGuid():N}",
+            _worldSnapshotRequestId,
             payload));
     }
 

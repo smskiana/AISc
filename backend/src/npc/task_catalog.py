@@ -21,6 +21,7 @@ class NpcTaskCatalog:
             for entry in entries
         }
         self._affordances = actions.get("action_affordances", {})
+        self._runtime_metadata = actions.get("task_runtime_metadata", {})
         self._location_ids = self._build_location_ids()
 
     @property
@@ -81,6 +82,38 @@ class NpcTaskCatalog:
         if not duration_range:
             return 0
         return max(0, int(duration_range[0]))
+
+    def task_runtime_metadata(self, action_id: str) -> dict[str, object]:
+        """返回由共享目录声明的分段、完成、抢占和 Gameplay 持续量。"""
+        if action_id not in self._actions_by_id:
+            return {}
+        metadata = self._runtime_metadata.get(action_id, {})
+        return {
+            "segment_id": metadata.get("segment_id", ""),
+            "completion_policy_id": metadata.get("completion_policy_id", ""),
+            "interrupt_policy": metadata.get("interrupt_policy", ""),
+            "duration_gameplay_seconds": max(0, int(metadata.get("duration_gameplay_seconds", 0))),
+            "lifecycle_action": bool(metadata.get("lifecycle_action", False)),
+        }
+
+    def validate_runtime_metadata(self, action_id: str) -> tuple[bool, str]:
+        """验证正式任务的运行时元数据完整且只使用稳定枚举。"""
+        metadata = self.task_runtime_metadata(action_id)
+        if not metadata:
+            return False, "unknown_action"
+        if metadata["segment_id"] not in {"work", "rest", "both"}:
+            return False, "invalid_segment_id"
+        if metadata["completion_policy_id"] not in {
+            "duration", "animation_event", "interaction_result", "state_condition", "segment_boundary"
+        }:
+            return False, "invalid_completion_policy_id"
+        if metadata["interrupt_policy"] not in {
+            "non_interruptible", "player_interruptible", "fully_interruptible"
+        }:
+            return False, "invalid_interrupt_policy"
+        if metadata["completion_policy_id"] == "duration" and metadata["duration_gameplay_seconds"] <= 0:
+            return False, "invalid_duration_gameplay_seconds"
+        return True, ""
 
     def location_tags(self, location_id: str) -> set[str]:
         """组合显式 spot 标签、zone ID 和 spot ID，供 affordance 统一匹配。"""

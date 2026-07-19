@@ -48,11 +48,13 @@ public class NpcSpawner : MonoBehaviour
     private IMovementProvider _movementProvider;
     private NpcBehaviorApplier _behaviorApplier;
     private NpcAmbientBehaviorController _ambientBehaviorController;
+    // 兼容旧私有辅助方法；运行时权威状态由 _dailyScheduleRuntime 承担。
     private readonly Dictionary<string, NpcDailyScheduleController> _dailySchedules = new();
     private readonly Dictionary<string, NpcRuntimeStateController> _runtimeStates = new();
     private readonly Dictionary<string, string> _scheduleCandidateByRequest = new();
     private NpcActionResultReporter _actionResultReporter;
     private NpcSocialCandidateController _socialCandidateController;
+    private NpcDailyScheduleRuntimeCoordinator _dailyScheduleRuntime;
 
     // ── 初始化 ──
 
@@ -72,19 +74,19 @@ public class NpcSpawner : MonoBehaviour
             Debug.Log("[NpcSpawner] 使用直线移动");
         }
         _actionResultReporter = new NpcActionResultReporter(GameManager.Instance);
-        _actionResultReporter.TerminalReported += HandleTaskTerminal;
         _behaviorApplier = new NpcBehaviorApplier(_actionResultReporter);
         _ambientBehaviorController = new NpcAmbientBehaviorController();
         _socialCandidateController = gameObject.GetComponent<NpcSocialCandidateController>();
         if (_socialCandidateController == null)
             _socialCandidateController = gameObject.AddComponent<NpcSocialCandidateController>();
         _socialCandidateController.Initialize(this);
+        _dailyScheduleRuntime = new NpcDailyScheduleRuntimeCoordinator(GetNpc, _behaviorApplier, _ambientBehaviorController, _socialCandidateController, _actionResultReporter);
 
         var gm = GameManager.Instance;
         if (gm != null)
         {
             gm.OnGameReady += HandleGameReady;
-            gm.OnNpcDailyScheduleReady += HandleNpcDailyScheduleReady;
+            gm.OnNpcDailyScheduleReady += _dailyScheduleRuntime.Receive;
             gm.OnNpcStateEffect += HandleNpcStateEffect;
             gm.OnAuthoritativeGameTimeChanged += HandleAuthoritativeGameTimeChanged;
         }
@@ -98,12 +100,10 @@ public class NpcSpawner : MonoBehaviour
         if (gm != null)
         {
             gm.OnGameReady -= HandleGameReady;
-            gm.OnNpcDailyScheduleReady -= HandleNpcDailyScheduleReady;
+            gm.OnNpcDailyScheduleReady -= _dailyScheduleRuntime.Receive;
             gm.OnNpcStateEffect -= HandleNpcStateEffect;
             gm.OnAuthoritativeGameTimeChanged -= HandleAuthoritativeGameTimeChanged;
         }
-        if (_actionResultReporter != null)
-            _actionResultReporter.TerminalReported -= HandleTaskTerminal;
     }
 
     // ── 公开 API ──
@@ -207,7 +207,7 @@ public class NpcSpawner : MonoBehaviour
     /// </summary>
     public IReadOnlyDictionary<string, NpcDailyScheduleController> GetDailySchedules()
     {
-        return _dailySchedules;
+        return _dailyScheduleRuntime?.Schedules ?? new Dictionary<string, NpcDailyScheduleController>();
     }
 
     /// <summary>
@@ -215,7 +215,8 @@ public class NpcSpawner : MonoBehaviour
     /// </summary>
     public bool TryGetDailySchedule(string npcId, out NpcDailyScheduleController schedule)
     {
-        return _dailySchedules.TryGetValue(npcId, out schedule);
+        schedule = null;
+        return _dailyScheduleRuntime != null && _dailyScheduleRuntime.TryGet(npcId, out schedule);
     }
 
     /// <summary>
@@ -223,24 +224,13 @@ public class NpcSpawner : MonoBehaviour
     /// </summary>
     public List<NpcDailyScheduleDiagnosticSnapshot> GetDailyScheduleDiagnosticSnapshots()
     {
-        var snapshots = new List<NpcDailyScheduleDiagnosticSnapshot>();
-        foreach (var pair in _dailySchedules)
-        {
-            NpcDailyScheduleController schedule = pair.Value;
-            snapshots.Add(new NpcDailyScheduleDiagnosticSnapshot
-            {
-                npc_id = pair.Key,
-                schedule_day = schedule.ScheduleDay,
-                schedule_revision = schedule.ScheduleRevision,
-                planner_version = schedule.PlannerVersion,
-                remaining_count = schedule.Remaining.Count,
-                pending_candidate_id = schedule.PendingCandidate?.candidate_id ?? string.Empty,
-                last_decision_reason = schedule.LastDecisionReason,
-                payload_fingerprint = schedule.AcceptedPayloadFingerprint,
-                last_operation_id = schedule.LastOperationId,
-            });
-        }
-        return snapshots;
+        return _dailyScheduleRuntime?.Diagnostics() ?? new List<NpcDailyScheduleDiagnosticSnapshot>();
+    }
+
+    /// <summary>导出两段式运行时的结构化 segment、队列和最近终态。</summary>
+    public List<NpcDayPlanRuntimeSnapshot> GetDayPlanSnapshots()
+    {
+        return _dailyScheduleRuntime?.DayPlanSnapshots() ?? new List<NpcDayPlanRuntimeSnapshot>();
     }
 
     /// <summary>
@@ -274,17 +264,10 @@ public class NpcSpawner : MonoBehaviour
     /// </summary>
     public void WriteDailySchedulesToSave(List<NpcWorldSaveData> savedNpcs)
     {
-        if (savedNpcs == null)
-            return;
-        foreach (NpcWorldSaveData savedNpc in savedNpcs)
+        _dailyScheduleRuntime?.WriteToSave(savedNpcs, GameManager.Instance?.CurrentTime?.day ?? 0);
+        foreach (NpcWorldSaveData savedNpc in savedNpcs ?? new List<NpcWorldSaveData>())
         {
-            if (savedNpc == null || !_dailySchedules.TryGetValue(savedNpc.npc_id, out var schedule))
-                continue;
-            savedNpc.schedule_day = schedule.ScheduleDay;
-            savedNpc.schedule_revision = schedule.ScheduleRevision;
-            savedNpc.schedule_planner_version = schedule.PlannerVersion;
-            savedNpc.remaining_daily_schedule = schedule.ExportRemaining();
-            if (_runtimeStates.TryGetValue(savedNpc.npc_id, out var runtime))
+            if (savedNpc != null && _runtimeStates.TryGetValue(savedNpc.npc_id, out NpcRuntimeStateController runtime))
             {
                 savedNpc.current_need = runtime.CurrentNeed;
                 savedNpc.is_asleep = runtime.IsAsleep;
@@ -300,20 +283,7 @@ public class NpcSpawner : MonoBehaviour
     {
         if (data?.game_time == null)
             return;
-        _dailySchedules.Clear();
-        _scheduleCandidateByRequest.Clear();
-        foreach (NpcWorldSaveData savedNpc in data.npcs ?? new List<NpcWorldSaveData>())
-        {
-            if (savedNpc == null || savedNpc.schedule_day != data.game_time.day)
-                continue;
-            var controller = new NpcDailyScheduleController();
-            controller.Restore(
-                savedNpc.schedule_day,
-                savedNpc.schedule_revision,
-                savedNpc.schedule_planner_version,
-                savedNpc.remaining_daily_schedule);
-            _dailySchedules[savedNpc.npc_id] = controller;
-        }
+        _dailyScheduleRuntime?.Restore(data);
     }
 
     /// <summary>
@@ -323,25 +293,7 @@ public class NpcSpawner : MonoBehaviour
     {
         if (gameTime == null)
             return;
-        foreach (var pair in _dailySchedules)
-        {
-            if (pair.Value.ScheduleDay > 0 && pair.Value.ScheduleDay != gameTime.day)
-                pair.Value.ClearForNewDay();
-        }
-        foreach (var pair in _dailySchedules)
-        {
-            NpcEntity npc = GetNpc(pair.Key);
-            if (npc == null)
-                continue;
-            bool isRuntimeReserved = npc.IsMotionLocked || (_socialCandidateController?.IsReserved(pair.Key) ?? false);
-            NpcScheduleSwitchResult decision = pair.Value.EvaluateNext(gameTime.hour, gameTime.minute, isRuntimeReserved);
-            if (decision.Decision == NpcScheduleSwitchDecision.Switch)
-                StartScheduleCandidate(pair.Key, pair.Value, npc);
-            else if (decision.Decision == NpcScheduleSwitchDecision.SkipNext && pair.Value.PendingCandidate != null)
-                pair.Value.Consume(pair.Value.PendingCandidate.candidate_id);
-            else if (decision.Decision == NpcScheduleSwitchDecision.RequestReplan)
-                RequestScheduleReplan(pair.Key, pair.Value, "schedule_window_expired", decision.Reason);
-        }
+        _dailyScheduleRuntime?.Tick(gameTime);
         foreach (var pair in _runtimeStates)
         {
             NpcEntity npc = GetNpc(pair.Key);
@@ -380,27 +332,6 @@ public class NpcSpawner : MonoBehaviour
             },
             context = new BehaviorContext { reason = "daily_schedule", plan_source = candidate.source },
         }, npc);
-    }
-
-    /// <summary>
-    /// 用 Unity 权威剩余计划请求后端重排单名 NPC 的后续日程。
-    /// </summary>
-    private void RequestScheduleReplan(string npcId, NpcDailyScheduleController controller, string interactionType, string reason)
-    {
-        var gm = GameManager.Instance;
-        var state = gm?.NPCs?.Find(item => item.npc_id == npcId);
-        if (gm == null || state == null)
-            return;
-        gm.SendNpcScheduleReplanRequest(
-            $"schedule_replan:{npcId}:{controller.ScheduleRevision}:{System.Guid.NewGuid():N}",
-            npcId,
-            interactionType,
-            reason,
-            controller.LastDecisionReason,
-            new[] { npcId },
-            controller.ScheduleRevision,
-            controller.ExportRemaining(),
-            state);
     }
 
     /// <summary>

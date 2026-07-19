@@ -39,11 +39,24 @@ public sealed class NpcSocialProtocolController
     /// 绑定协程宿主、NPC 查询和会合距离判断。
     /// </summary>
     public NpcSocialProtocolController(MonoBehaviour coroutineHost, NpcSpawner npcSpawner, NpcSocialRendezvousController rendezvous)
+        : this(coroutineHost, npcSpawner, rendezvous, true)
+    {
+    }
+
+    /// <summary>
+    /// 创建协议控制器，并允许隔离诊断避免替换真实运行实例。
+    /// </summary>
+    private NpcSocialProtocolController(
+        MonoBehaviour coroutineHost,
+        NpcSpawner npcSpawner,
+        NpcSocialRendezvousController rendezvous,
+        bool registerActive)
     {
         _coroutineHost = coroutineHost;
         _npcSpawner = npcSpawner;
         _rendezvous = rendezvous;
-        ActiveInstance = this;
+        if (registerActive)
+            ActiveInstance = this;
     }
 
     /// <summary>
@@ -59,6 +72,18 @@ public sealed class NpcSocialProtocolController
             return false;
         if (!LocationDatabase.HasPosition(locationId))
             return false;
+        if (!TryBeginSession(decision, locationId))
+            return false;
+        npcA.MoveToLocation(locationId, result => HandleMovementResult(decision.request_id, true, result));
+        npcB.MoveToLocation(locationId, result => HandleMovementResult(decision.request_id, false, result));
+        return true;
+    }
+
+    /// <summary>
+    /// 原子建立协议 session，供正式入口与隔离诊断共用相同状态转移起点。
+    /// </summary>
+    private bool TryBeginSession(NpcSocialDecisionResultMsg decision, string locationId)
+    {
         if (!Reservations.TryReserve(decision.request_id, decision.npc_id, decision.target_npc_id))
             return false;
         var session = new ActiveSession
@@ -72,9 +97,90 @@ public sealed class NpcSocialProtocolController
         };
         _active[session.RequestId] = session;
         SetTimeout(session, RendezvousTimeoutSec);
-        npcA.MoveToLocation(locationId, result => HandleMovementResult(session.RequestId, true, result));
-        npcB.MoveToLocation(locationId, result => HandleMovementResult(session.RequestId, false, result));
         return true;
+    }
+
+    /// <summary>
+    /// 在隔离内存中运行白名单社交协议场景，不替换真实实例或写入场景与存档。
+    /// </summary>
+    public static NpcSocialProbeResult RunIsolatedProbe(string scenario)
+    {
+        string normalized = (scenario ?? string.Empty).Trim().ToLowerInvariant();
+        string suffix = Guid.NewGuid().ToString("N");
+        string requestId = $"social_probe_{suffix}";
+        string npcA = $"social_probe_a_{suffix}";
+        string npcB = $"social_probe_b_{suffix}";
+        var controller = new NpcSocialProtocolController(null, null, null, false);
+        var decision = new NpcSocialDecisionResultMsg
+        {
+            request_id = requestId,
+            candidate_id = "social_probe_candidate",
+            npc_id = npcA,
+            target_npc_id = npcB,
+        };
+        var result = new NpcSocialProbeResult { scenario = normalized, request_id = requestId };
+        if (!controller.TryBeginSession(decision, "social_probe_location"))
+        {
+            result.failure_reason = "reservation_rejected";
+            return result;
+        }
+
+        result.both_reserved_initially = Reservations.IsReserved(npcA) && Reservations.IsReserved(npcB);
+        switch (normalized)
+        {
+            case "complete":
+                controller.HandleMovementResult(requestId, true, MovementResult.Succeeded);
+                controller.HandleMovementResult(requestId, false, MovementResult.Succeeded);
+                result.content_accepted = controller.TryAcceptContent(new NpcSocialContentResultMsg
+                {
+                    request_id = requestId,
+                    world_revision = 0,
+                    success = true,
+                    lines = new List<NpcSocialContentLineMsg>
+                    {
+                        new NpcSocialContentLineMsg { speaker_npc_id = npcA, target_npc_id = npcB, text = "probe" },
+                    },
+                });
+                controller.CompletePlayback(requestId, npcA, npcB);
+                break;
+            case "player_preempt":
+                controller.CancelForNpc(npcA, "player_dialogue_preempted");
+                break;
+            case "rendezvous_failure":
+                controller.HandleMovementResult(requestId, true, MovementResult.Failed);
+                controller.HandleMovementResult(requestId, false, MovementResult.Succeeded);
+                break;
+            case "late_content_revision":
+                controller.CancelForNpc(npcA, "player_dialogue_preempted");
+                result.late_content_accepted = controller.TryAcceptContent(new NpcSocialContentResultMsg
+                {
+                    request_id = requestId,
+                    world_revision = 0,
+                    success = true,
+                    lines = new List<NpcSocialContentLineMsg>
+                    {
+                        new NpcSocialContentLineMsg { speaker_npc_id = npcA, target_npc_id = npcB, text = "late" },
+                    },
+                });
+                break;
+            default:
+                controller.CancelForNpc(npcA, "diagnostic_cleanup");
+                result.failure_reason = "unknown_social_probe_scenario";
+                return result;
+        }
+
+        NpcSocialDiagnosticSnapshot terminal = controller.GetDiagnosticSnapshots().Find(item => item.request_id == requestId);
+        result.terminal_phase = terminal?.phase ?? string.Empty;
+        result.terminal_reason = terminal?.terminal_reason ?? string.Empty;
+        result.both_released = !Reservations.IsReserved(npcA) && !Reservations.IsReserved(npcB);
+        result.success = result.both_reserved_initially
+            && result.both_released
+            && terminal?.is_terminal == true
+            && (normalized != "complete" || result.content_accepted)
+            && (normalized != "late_content_revision" || !result.late_content_accepted);
+        if (!result.success)
+            result.failure_reason = "social_probe_contract_failed";
+        return result;
     }
 
     /// <summary>
@@ -171,7 +277,7 @@ public sealed class NpcSocialProtocolController
             Fail(requestId, "movement_failed");
             return;
         }
-        if (_rendezvous.ShouldWaitForParticipants(session.NpcA, session.NpcB))
+        if (_rendezvous != null && _rendezvous.ShouldWaitForParticipants(session.NpcA, session.NpcB))
         {
             Fail(requestId, "rendezvous_distance_not_met");
             return;
@@ -188,6 +294,8 @@ public sealed class NpcSocialProtocolController
     /// </summary>
     private void SetTimeout(ActiveSession session, float timeoutSec)
     {
+        if (_coroutineHost == null)
+            return;
         if (session.TimeoutRoutine != null)
             _coroutineHost.StopCoroutine(session.TimeoutRoutine);
         string expectedState = session.State;
@@ -223,7 +331,7 @@ public sealed class NpcSocialProtocolController
     {
         if (!_active.TryGetValue(requestId, out ActiveSession session))
             return;
-        if (session.TimeoutRoutine != null)
+        if (session.TimeoutRoutine != null && _coroutineHost != null)
             _coroutineHost.StopCoroutine(session.TimeoutRoutine);
         Reservations.Release(requestId, session.NpcA, session.NpcB);
         _active.Remove(requestId);

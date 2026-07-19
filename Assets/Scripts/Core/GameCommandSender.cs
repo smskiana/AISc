@@ -111,7 +111,10 @@ public class GameCommandSender
         string actionId,
         string status,
         string actualLocationId,
-        string reason)
+        string reason,
+        string phase = "terminal",
+        string candidateId = "",
+        long scheduleRevision = 0)
     {
         Send(new NpcRuntimeEventCommand
         {
@@ -122,6 +125,9 @@ public class GameCommandSender
             result = status,
             actual_location_id = actualLocationId,
             reason = reason,
+            phase = phase,
+            candidate_id = candidateId,
+            schedule_revision = scheduleRevision,
         });
     }
 
@@ -181,38 +187,6 @@ public class GameCommandSender
             actual_location_id = actualLocationId,
             game_time = gameTime,
             world_revision = worldRevision,
-        });
-    }
-
-    /// <summary>
-    /// 以 Unity 权威剩余日程请求后端重规划单名 NPC。
-    /// </summary>
-    public void SendNpcScheduleReplanRequest(
-        string operationId,
-        string npcId,
-        string interactionType,
-        string endReason,
-        string interactionSummary,
-        string[] participantIds,
-        GameTime gameTime,
-        long worldRevision,
-        long baseScheduleRevision,
-        System.Collections.Generic.List<NpcDailyScheduleItem> remainingSchedule,
-        NpcState physicalState)
-    {
-        Send(new NpcScheduleReplanRequestCommand
-        {
-            operation_id = operationId,
-            npc_id = npcId,
-            interaction_type = interactionType,
-            end_reason = endReason,
-            interaction_summary = interactionSummary,
-            participant_ids = participantIds,
-            game_time = gameTime,
-            world_revision = worldRevision,
-            base_schedule_revision = baseScheduleRevision,
-            remaining_schedule = remainingSchedule,
-            physical_state = physicalState,
         });
     }
 
@@ -345,6 +319,9 @@ public class GameCommandSender
         public string result;
         public string actual_location_id;
         public string reason;
+        public string phase;
+        public string candidate_id;
+        public long schedule_revision;
     }
 
     [Serializable]
@@ -359,25 +336,6 @@ public class GameCommandSender
         public string reason;
         public GameTime game_time;
         public long world_revision;
-    }
-
-    [Serializable]
-    private class NpcScheduleReplanRequestCommand
-    {
-        public string type = "NPC_SCHEDULE_REPLAN_REQUEST";
-        public string operation_id;
-        public string npc_id;
-        public string interaction_type;
-        public string end_reason;
-        public string interaction_summary;
-        public string[] participant_ids;
-        public GameTime game_time;
-        public long world_revision;
-        public string snapshot_id;
-        public long time_revision;
-        public long base_schedule_revision;
-        public System.Collections.Generic.List<NpcDailyScheduleItem> remaining_schedule;
-        public NpcState physical_state;
     }
 
     [Serializable]

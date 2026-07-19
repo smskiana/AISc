@@ -8,4 +8,4 @@
 
 `MemoryCheckpointService` 只保存记忆表与 LanceDB，并通过 `checkpoint_id` 与 Unity 主存档关联。旧 `SaveManager` 暂时保留为完整存档兼容适配器，不作为新功能入口。
 
-开发期临时支持 `memory_checkpoints_purge_all`：仅由 Unity 新游戏入口调用，永久删除全部正式、备份和待提交记忆检查点；清理失败会返回失败响应并阻止 Unity 进入新游戏。
+开发期由 `new_game_backend_purge.py` 提供新游戏复合清理 seam：统一删除记忆检查点和可重建日程快照并清空日程内存幂等缓存；检查点子步骤失败时恢复本次日程删除，返回稳定子域失败码并阻止 Unity 进入新游戏。`memory_checkpoints_purge_all` 只作为协议兼容入口。

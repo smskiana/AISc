@@ -25,6 +25,7 @@ public class GameManager : MonoBehaviour
     public WebSocketClient WS { get; private set; }
     public UnitySaveService SaveService => _saveService;
     public GameTime CurrentTime => _gameTimeController?.CurrentTime;
+    public float SecondsPerGameMinute => _gameTimeController?.SecondsPerGameMinute ?? 1f;
     public List<NpcState> NPCs => _stateStore.NPCs;
     public string PlayerLocation => _stateStore.PlayerLocation;
     public bool IsSleeping => _stateStore.IsSleeping;
@@ -32,13 +33,14 @@ public class GameManager : MonoBehaviour
     public bool IsGameplayReady => _stateStore.IsGameplayReady;
     public string CurrentDialogueNpcId => _stateStore.CurrentDialogueNpcId;
     public long WorldRevision => _stateStore.WorldRevision;
-    public WorldPreparationDiagnosticSnapshot WorldPreparationSnapshot { get; private set; } = new WorldPreparationDiagnosticSnapshot();
+    public WorldPreparationDiagnosticSnapshot WorldPreparationSnapshot => _worldPreparationTracker.Snapshot;
 
     private string _pendingLoadSlot;
     private string _pendingDialogueRequestId;
     private string _pendingDialogueLocation;
     private NpcVisualContext _pendingDialogueVisualContext;
     private readonly GameStateStore _stateStore = new GameStateStore();
+    private readonly WorldPreparationStateTracker _worldPreparationTracker = new WorldPreparationStateTracker();
     private GameCommandSender _commandSender;
     private UnitySaveService _saveService;
     private GameTimeController _gameTimeController;
@@ -85,7 +87,6 @@ public class GameManager : MonoBehaviour
             OnLoadComplete = HandleLoadComplete,
             OnNpcDailyScheduleReady = (msg) => OnNpcDailyScheduleReady?.Invoke(msg),
             OnNpcStateEffect = (msg) => OnNpcStateEffect?.Invoke(msg),
-            OnNpcScheduleReplanContext = HandleNpcScheduleReplanContext,
             OnDialogueToken = (msg) => {
                 OnDialogueToken?.Invoke(msg);
             },
@@ -120,12 +121,10 @@ public class GameManager : MonoBehaviour
             },
             OnGameError = (msg) => {
                 Debug.LogError($"[服务器错误] {msg.message}");
-                WorldPreparationSnapshot.failure_reason = msg.message ?? string.Empty;
-                WorldPreparationSnapshot.is_active = false;
                 OnGameError?.Invoke(msg);
             },
             OnMidnightSettlementComplete = HandleMidnightSettlementComplete,
-            OnMidnightSettlementFailed = (msg) => OnMidnightSettlementFailed?.Invoke(msg),
+            OnMidnightSettlementFailed = HandleMidnightSettlementFailed,
             OnWorldPreparationProgress = HandleWorldPreparationProgress,
         };
     }
@@ -149,6 +148,9 @@ public class GameManager : MonoBehaviour
             StartCoroutine(AutoStartWhenConnected());
     }
 
+    /// <summary>
+    /// 应用新游戏终包，并仅在 operation 匹配时收口世界准备诊断。
+    /// </summary>
     void HandleGameReady(GameReadyMsg msg)
     {
         _stateStore.ApplyGameReady(msg);
@@ -157,9 +159,7 @@ public class GameManager : MonoBehaviour
         foreach (var n in NPCs)
             Debug.Log($"  {n.npc_id}: {n.emotion} e={n.energy:F0} @ {n.current_location}");
         OnGameReady?.Invoke(msg);
-        WorldPreparationSnapshot.is_active = false;
-        WorldPreparationSnapshot.phase = "complete";
-        WorldPreparationSnapshot.progress_floor = 1f;
+        _worldPreparationTracker.TryComplete(msg.operation_id);
         SystemMessageController.Instance?.CompleteLoading("世界准备完成，正在进入街区…");
     }
 
@@ -189,17 +189,10 @@ public class GameManager : MonoBehaviour
     /// </summary>
     void HandleWorldPreparationProgress(WorldPreparationProgressMsg msg)
     {
+        if (!_worldPreparationTracker.TryApplyProgress(msg))
+            return;
+
         _stateStore.MarkGameplayNotReady();
-        WorldPreparationSnapshot = new WorldPreparationDiagnosticSnapshot
-        {
-            operation_id = msg.operation_id ?? string.Empty,
-            flow = msg.flow ?? string.Empty,
-            phase = msg.phase ?? string.Empty,
-            is_active = true,
-            progress_floor = msg.progress_floor,
-            failure_reason = string.Empty,
-            target_game_day = msg.target_game_day,
-        };
         SystemMessageController.Instance?.SetLoadingProgress(msg.message, msg.progress_floor);
         OnWorldPreparationProgress?.Invoke(msg);
     }
@@ -209,8 +202,18 @@ public class GameManager : MonoBehaviour
     /// </summary>
     void HandleMidnightSettlementComplete(MidnightSettlementCompleteMsg msg)
     {
+        _worldPreparationTracker.TryComplete(msg.operation_id);
         _stateStore.MarkGameplayReady();
         OnMidnightSettlementComplete?.Invoke(msg);
+    }
+
+    /// <summary>
+    /// 午夜世界准备失败时收口匹配诊断，再保持既有睡眠流程事件转发。
+    /// </summary>
+    void HandleMidnightSettlementFailed(MidnightSettlementFailedMsg msg)
+    {
+        _worldPreparationTracker.TryFail(msg.operation_id, msg.reason);
+        OnMidnightSettlementFailed?.Invoke(msg);
     }
 
     // ── 测试快捷键 ──
@@ -339,9 +342,13 @@ public class GameManager : MonoBehaviour
         string actionId,
         string status,
         string actualLocationId,
-        string reason)
+        string reason,
+        string phase = "terminal",
+        string candidateId = "",
+        long scheduleRevision = 0)
     {
-        _stateStore.ApplyNpcActionResult(npcId, status, actualLocationId);
+        if (phase == "terminal")
+            _stateStore.ApplyNpcActionResult(npcId, status, actualLocationId);
         _commandSender.SendNpcRuntimeEvent(
             eventId,
             requestId,
@@ -349,7 +356,10 @@ public class GameManager : MonoBehaviour
             actionId,
             status,
             actualLocationId,
-            reason);
+            reason,
+            phase,
+            candidateId,
+            scheduleRevision);
     }
 
     /// <summary>
@@ -391,34 +401,6 @@ public class GameManager : MonoBehaviour
             WorldRevision);
     }
 
-    /// <summary>
-    /// 对外暴露单 NPC 日程重规划请求入口，调用方必须提供 Unity 权威剩余日程。
-    /// </summary>
-    public void SendNpcScheduleReplanRequest(
-        string operationId,
-        string npcId,
-        string interactionType,
-        string endReason,
-        string interactionSummary,
-        string[] participantIds,
-        long baseScheduleRevision,
-        List<NpcDailyScheduleItem> remainingSchedule,
-        NpcState physicalState)
-    {
-        _commandSender.SendNpcScheduleReplanRequest(
-            operationId,
-            npcId,
-            interactionType,
-            endReason,
-            interactionSummary,
-            participantIds,
-            CurrentTime,
-            WorldRevision,
-            baseScheduleRevision,
-            remainingSchedule,
-            physicalState);
-    }
-
     public void SendDialogueEnd(string npcId, string reason = "player_left")
     {
         _commandSender.SendDialogueEnd(npcId, reason, CurrentTime, WorldRevision);
@@ -434,36 +416,6 @@ public class GameManager : MonoBehaviour
         _stateStore.SetPlayerLocation(locationId);
         OnPlayerLocationChanged?.Invoke(locationId);
         _commandSender.SendPlayerMove(locationId);
-    }
-
-    /// <summary>
-    /// 按后端互动摘要为受影响 NPC 发起基于 Unity 权威剩余日程的重规划请求。
-    /// </summary>
-    private void HandleNpcScheduleReplanContext(NpcScheduleReplanContextMsg msg)
-    {
-        if (msg == null || msg.npc_ids == null)
-            return;
-        foreach (string npcId in msg.npc_ids)
-        {
-            if (string.IsNullOrWhiteSpace(npcId))
-                continue;
-            var scheduleProvider = FindObjectOfType<NpcSpawner>();
-            var state = _stateStore.FindNpc(npcId);
-            if (scheduleProvider == null || state == null)
-                continue;
-            if (!scheduleProvider.TryGetDailySchedule(npcId, out var schedule))
-                continue;
-            SendNpcScheduleReplanRequest(
-                $"{msg.operation_id}:replan:{npcId}",
-                npcId,
-                msg.interaction_type,
-                msg.end_reason,
-                msg.interaction_summary,
-                (msg.participant_ids ?? new List<string>()).ToArray(),
-                schedule.ScheduleRevision,
-                schedule.ExportRemaining(),
-                state);
-        }
     }
 
     public void SendSave(string slot = "1")

@@ -8,4 +8,6 @@
 
 包括 `GameManager`、`GameCommandSender`、`GameStateStore`、`WebSocketClient`、玩家控制及后端进程托管。连接、协议入口或全局状态问题先从本目录定位。
 
+`WorldPreparationStateTracker` 是世界准备诊断状态的唯一 owner，按 operation 身份处理进度、成功与失败终态；`GameManager` 只负责协议适配和既有事件转发。
+
 NPC 正式任务协议由 Core 负责路由和发送，但任务生命周期属于 `Assets/Scripts/NPC/NpcTaskExecutor.cs`，不得把阶段状态机塞进 `GameManager`。

@@ -17,6 +17,7 @@
 | 对话系统 | 玩家对话、NPC 闲聊、现场感知、快捷回复与准备握手 | `Dialogue/README.md` |
 | 前端职责 | Unity Core / NPC / Dialogue / Navigation 职责拆分与回归 | `FrontendArchitecture/README.md` |
 | 协议与存档 | 协议 envelope、记忆检查点、Unity 主存档、重连和状态迁移 | `ProtocolAndSave/README.md` |
+| 测试与诊断 | 测试工具选择、结构化诊断、独立验收与测试证据 | `TestingAndDiagnostics/README.md` |
 
 ## 维护规则
 

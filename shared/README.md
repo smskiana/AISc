@@ -7,7 +7,7 @@
 ## 文件夹内容
 
 - `locations.json`: 地点、spot 稳定 ID 与 `spot_tags` affordance 标签。
-- `actions.json`: 正式任务类型、动作语义与 `action_affordances`；移动方式不作为 action。
+- `actions.json`: 正式任务类型、动作语义、`action_affordances` 与 `task_runtime_metadata`；移动方式不作为 action。运行时元数据统一声明 segment、完成策略、抢占策略和 Gameplay 持续量，`work_open / work_close` 标记为 segment 生命周期动作。
 - `items.json`: 物品类型与物品语义。
 
 修改共享配置时必须同步检查两端引用，并运行 `backend/scripts/check_project_conventions.py`。

@@ -7,7 +7,7 @@ using System.Collections.Generic;
 [Serializable]
 public class GameSaveData
 {
-    public int schema_version = 2;
+    public int schema_version = 3;
     public string save_id;
     public string slot_id;
     public string checkpoint_id;
@@ -57,6 +57,7 @@ public class NpcWorldSaveData
     public string schedule_planner_version;
     public long schedule_revision;
     public List<NpcDailyScheduleItem> remaining_daily_schedule = new List<NpcDailyScheduleItem>();
+    public NpcDayPlan day_plan;
 }
 
 /// <summary>

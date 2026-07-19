@@ -18,6 +18,9 @@ public sealed class NpcDailyScheduleController
     public string LastDecisionReason { get; private set; } = string.Empty;
     public string AcceptedPayloadFingerprint => _acceptedPayloadFingerprint;
     public string LastOperationId { get; private set; } = string.Empty;
+    public bool EveningCompressed { get; private set; }
+    public int CompressionBeforeCount { get; private set; }
+    public int CompressionAfterCount { get; private set; }
 
     public NpcDailyScheduleController(INpcScheduleSwitchPolicy switchPolicy = null)
     {
@@ -39,9 +42,9 @@ public sealed class NpcDailyScheduleController
             reason = "non_authoritative_schedule_status";
             return false;
         }
-        if (ScheduleDay > 0 && message.game_day < ScheduleDay)
+        if (ScheduleDay > 0 && message.game_day != ScheduleDay)
         {
-            reason = "stale_schedule_day";
+            reason = message.game_day < ScheduleDay ? "stale_schedule_day" : "schedule_day_requires_atomic_replace";
             return false;
         }
         string fingerprint = BuildFingerprint(message.items);
@@ -62,6 +65,9 @@ public sealed class NpcDailyScheduleController
         PlannerVersion = message.planner_version ?? string.Empty;
         LastOperationId = message.operation_id ?? string.Empty;
         PendingCandidate = null;
+        EveningCompressed = false;
+        CompressionBeforeCount = 0;
+        CompressionAfterCount = 0;
         _acceptedPayloadFingerprint = fingerprint;
         reason = "schedule_replaced";
         return true;
@@ -97,6 +103,28 @@ public sealed class NpcDailyScheduleController
     }
 
     /// <summary>
+    /// 在傍晚仅压缩尚未开始的剩余项：required、important、optional 的稳定优先级。
+    /// </summary>
+    public void CompressEvening(int hour, int minute)
+    {
+        CompressionBeforeCount = _remaining.Count;
+        if (EveningCompressed || _remaining.Count < 2)
+        {
+            EveningCompressed = true;
+            CompressionAfterCount = _remaining.Count;
+            return;
+        }
+        int now = hour * 60 + minute;
+        _remaining.RemoveAll(item => TryMinute(item.planned_start_time, out int planned)
+            && now > planned + item.execution_window_after_minutes
+            && !string.Equals(item.necessity, "required", StringComparison.Ordinal));
+        _remaining.Sort((left, right) => NecessityRank(left.necessity).CompareTo(NecessityRank(right.necessity)));
+        EveningCompressed = true;
+        CompressionAfterCount = _remaining.Count;
+        LastDecisionReason = "schedule_evening_compressed";
+    }
+
+    /// <summary>
     /// 导出可进入 Unity 主存档的剩余计划；pending 与 in-flight 均为运行态，不随存档保留。
     /// </summary>
     public List<NpcDailyScheduleItem> ExportRemaining()
@@ -118,6 +146,9 @@ public sealed class NpcDailyScheduleController
         _acceptedPayloadFingerprint = BuildFingerprint(_remaining);
         LastOperationId = string.Empty;
         LastDecisionReason = "schedule_restored";
+        EveningCompressed = false;
+        CompressionBeforeCount = 0;
+        CompressionAfterCount = 0;
     }
 
     /// <summary>
@@ -128,6 +159,14 @@ public sealed class NpcDailyScheduleController
         _remaining.Clear();
         PendingCandidate = null;
         LastDecisionReason = "schedule_day_expired";
+        EveningCompressed = false;
+        CompressionBeforeCount = 0;
+        CompressionAfterCount = 0;
+        ScheduleDay = 0;
+        ScheduleRevision = 0;
+        PlannerVersion = string.Empty;
+        LastOperationId = string.Empty;
+        _acceptedPayloadFingerprint = string.Empty;
     }
 
     private NpcScheduleSwitchResult Record(NpcScheduleSwitchResult result)
@@ -154,5 +193,11 @@ public sealed class NpcDailyScheduleController
         if (items == null)
             return string.Empty;
         return string.Join("|", items.ConvertAll(item => $"{item.candidate_id}:{item.action_id}:{item.location_id}:{item.planned_start_time}"));
+    }
+
+    private static int NecessityRank(string necessity)
+    {
+        return string.Equals(necessity, "required", StringComparison.Ordinal) ? 0
+            : string.Equals(necessity, "important", StringComparison.Ordinal) ? 1 : 2;
     }
 }
