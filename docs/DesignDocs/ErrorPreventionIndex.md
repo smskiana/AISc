@@ -134,3 +134,31 @@
 - 影响范围：Unity / Odin 插件安装、项目文件刷新、命令行 `dotnet build` 验证。
 - 何时优先回看：安装 / 升级 Odin 后遇到 `CS2001` 缺失 Sirenix 源文件错误时。
 - 明细： [2026-07-12_odin_missing_upgrader_csproj.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-12_odin_missing_upgrader_csproj.md:1)
+
+### 2026-07-20：Transformers 5 chat template 返回 BatchEncoding
+
+- 一句话摘要：`apply_chat_template(..., return_tensors="pt")` 的返回值可能是批次映射，必须用 `model.generate(**inputs)`，不能沿用单 tensor 调用。
+- 影响范围：Transformers 5、Qwen chat template、关闭 thinking 推理、训练与评估脚本。
+- 何时优先回看：新增或升级本地生成模型的 tokenizer / generate smoke 前。
+- 明细：[2026-07-20_transformers_chat_template_batch_encoding.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-20_transformers_chat_template_batch_encoding.md:1)
+
+### 2026-07-20：TorchVersion 不能直接写入 PyYAML safe_dump
+
+- 一句话摘要：第三方库版本对象即使表现为字符串，也应先归一化为基础类型再写 JSON/YAML manifest。
+- 影响范围：训练锁定、运行 manifest、PyTorch/Transformers 版本记录和可复现性门禁。
+- 何时优先回看：把运行库版本或设备属性写入 YAML/JSON 产物前。
+- 明细：[2026-07-20_torch_version_yaml_serialization.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-20_torch_version_yaml_serialization.md:1)
+
+### 2026-07-20：Hugging Face 分析命令漏传 HF_HOME
+
+- 一句话摘要：临时 tokenizer / 模型分析命令也会按进程环境选择缓存，漏传 `HF_HOME` 会回退到 C 盘并可能访问 Hub。
+- 影响范围：Transformers、huggingface_hub、本地模型评估、token 统计和项目外模型缓存。
+- 何时优先回看：运行任何 `from_pretrained()` 训练、测试或只读分析命令前。
+- 明细：[2026-07-20_huggingface_analysis_missing_hf_home.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-20_huggingface_analysis_missing_hf_home.md:1)
+
+### 2026-07-20：PowerShell Error 自动变量不可覆盖
+
+- 一句话摘要：PowerShell 变量名不区分大小写，`$error` 会命中只读自动变量 `$Error` 并使多步骤校验进入无效状态。
+- 影响范围：PowerShell 临时脚本、路径变量、测试收口和多步骤文档校验。
+- 何时优先回看：编写包含多个临时变量的 PowerShell 验证命令前。
+- 明细：[2026-07-20_powershell_error_automatic_variable.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-20_powershell_error_automatic_variable.md:1)

@@ -142,26 +142,36 @@ class DirectionResolver:
                 return []
             result: list[str] = []
             for value in values:
-                if value in allowed and value not in result:
+                if isinstance(value, str) and value in allowed and value not in result:
                     result.append(value)
-                elif value not in allowed:
+                elif not isinstance(value, str) or value not in allowed:
                     errors.append(f"invalid_{name}:{value}")
             return result
+
+        def clean_scalar(value: Any, allowed: set[str], fallback: str, name: str) -> str:
+            """把错误形状或非法值的标量枚举稳定降级。"""
+            if isinstance(value, str) and value in allowed:
+                return value
+            errors.append(f"invalid_{name}:{value}")
+            return fallback
+
+        def clean_mentions(values: Any, name: str) -> list[str]:
+            """过滤错误形状的实体或地点文本数组。"""
+            if not isinstance(values, list):
+                errors.append(f"{name}_not_array")
+                return []
+            return [item[:80] for item in values if isinstance(item, str) and item.strip()][:8]
 
         themes = clean_list(direction.themes, THEME_VALUES, "theme") or [Theme.GENERAL.value]
         relations = clean_list(direction.relation_facets, RELATION_VALUES, "relation_facet")
         sources = clean_list(direction.source_preferences, SOURCE_VALUES, "source_preference")
         negatives = clean_list(direction.negative_directions, NEGATIVE_VALUES, "negative_direction")
         constraints = clean_list(direction.query_constraints, QUERY_CONSTRAINT_VALUES, "query_constraint")
-        time_scope = direction.time_scope if direction.time_scope in TIME_VALUES else TimeScope.ANY.value
-        intent = direction.recall_intent if direction.recall_intent in INTENT_VALUES else RecallIntent.GENERAL_RECALL.value
-        if time_scope != direction.time_scope:
-            errors.append(f"invalid_time_scope:{direction.time_scope}")
-        if intent != direction.recall_intent:
-            errors.append(f"invalid_recall_intent:{direction.recall_intent}")
+        time_scope = clean_scalar(direction.time_scope, TIME_VALUES, TimeScope.ANY.value, "time_scope")
+        intent = clean_scalar(direction.recall_intent, INTENT_VALUES, RecallIntent.GENERAL_RECALL.value, "recall_intent")
         return RetrievalDirection(
-            entity_mentions=[str(item)[:80] for item in direction.entity_mentions if isinstance(item, str) and item.strip()][:8],
-            location_mentions=[str(item)[:80] for item in direction.location_mentions if isinstance(item, str) and item.strip()][:8],
+            entity_mentions=clean_mentions(direction.entity_mentions, "entity_mentions"),
+            location_mentions=clean_mentions(direction.location_mentions, "location_mentions"),
             themes=themes, relation_facets=relations, time_scope=time_scope,
             source_preferences=sources, recall_intent=intent, negative_directions=negatives,
             retrieval_query=str(direction.retrieval_query or "").strip()[:512], query_constraints=constraints,
@@ -234,13 +244,12 @@ class DirectionResolver:
             entity_type = ""
             confidence = 0.25
             for candidate_id, display in people.items():
-                if text in {candidate_id, display} or text in query:
-                    if display in query or candidate_id in query or text in {candidate_id, display}:
-                        entity_id, entity_type, confidence = candidate_id, "person", 0.95 if source == "query" else 0.65
-                        break
+                if text in {candidate_id, display}:
+                    entity_id, entity_type, confidence = candidate_id, "person", 0.95 if source == "query" else 0.65
+                    break
             if not entity_id:
                 for location_id, aliases in LOCATION_ALIASES.items():
-                    if text == location_id or any(alias in query or text == alias for alias in aliases):
+                    if text == location_id or text.startswith(f"{location_id}.") or text in aliases:
                         entity_id, entity_type, confidence = location_id, "location", 0.90 if source == "query" else 0.60
                         break
             mentions.append(ResolvedMention(text, entity_id, entity_type, source, confidence))

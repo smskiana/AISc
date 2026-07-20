@@ -1,7 +1,7 @@
 # codebase-memory-mcp 更新状态
 
-- 最近更新时间：2026-07-19 16:44:35 +08:00
-- 项目索引库：AISc_save_schema_fix_20260719（本轮新鲜索引）；AISc_two_segment_stage5_20260719；AISc_two_segment_stage1_20260719；AISc_replan_expiry_fix_20260719；AISc_replan_fix_20260719；AISc_world_prep_fix_20260719；AISc（既有 canonical）
+- 最近更新时间：2026-07-20 21:26:20 +08:00
+- 项目索引库：AISc（当前 canonical 新鲜索引）；AISc_memory_route_training_20260720；AISc_save_schema_fix_20260719；AISc_two_segment_stage5_20260719；AISc_two_segment_stage1_20260719；AISc_replan_expiry_fix_20260719；AISc_replan_fix_20260719；AISc_world_prep_fix_20260719
 - 项目路径：F:/GameProject/unity/AISc
-- 最近索引结果：6374 nodes / 20408 edges（moderate，新鲜索引已覆盖 Unity 存档 schema 3 仓储校验、2 到 3 migration 和聚焦回归；当前索引配置排除 `docs/`）
-- canonical `AISc` 的 moderate/fast 返回成功但抽查仍为旧图，full 连续两次 worker crash；本轮未把陈旧结果误记为成功，后续应在 MCP 索引器修复后合并回 canonical 名称。
+- 最近索引结果：11439 nodes / 26549 edges（`AISc`，moderate，actual 与 expected 完全一致，持久化 artifact 已写出；当前索引配置排除 `docs/`、`backend/scripts/`、训练夹具和测试缓存等目录）
+- canonical `AISc` 已验证可检索 `validate_records`、`build_training_text`、`collect_records` 和 `generate_candidates`，训练专项索引不再作为当前代码发现入口。

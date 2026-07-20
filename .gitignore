@@ -16,6 +16,13 @@ backend/logs/
 # 运行时数据
 backend/data/
 SaveData/
+backend/training/**/artifacts/
+backend/training/**/checkpoints/
+backend/training/**/datasets/
+backend/training/**/*.safetensors
+backend/training/**/*.gguf
+backend/training/**/*.jsonl
+!backend/training/**/fixtures/*.jsonl
 docs/AIChanges/artifacts/
 docs/AIChanges/_tmp_*/
 docs/AIChanges/*_artifacts/

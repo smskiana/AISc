@@ -245,6 +245,8 @@ else:
 2. `InitialKnowledgeProjectionDraft.md`：冷启动初始知识投影与他人记忆衍生草案；执行案为 `docs/AIChanges/Memory/2026-07-17_冷启动初始知识投影_plan.md`，执行记录见同目录 `_execution.md`。
 3. `LlmGuidedLocalDeepRetrievalDraft.md`：三模式可配置记忆路由的需求来源；执行案和记录见 `docs/AIChanges/Memory/2026-07-17_LLM定向本地深层记忆检索_plan.md` 与对应 execution。执行案提供 `local_only`、`llm_guided_local`、`llm_full_route`，默认玩家=引导深搜、NPC-NPC=完全本地、夜间=高预算引导深搜。
 4. `LlmRetrievalQueryVectorRoutingFixDraft.md`：LLM 检索想法与原问题、至多一条相关近期对白组成单次向量 query，并由本地实体校准、图路由和最终原子条目选择收口的设计来源；已按 `docs/AIChanges/Memory/2026-07-17_LLM检索想法向量路由修复_plan.md` 实施，执行证据见同目录对应 execution。
+5. `MemoryRoutingSpecialistModelSwitchDraft.md`：用 `Qwen3-0.6B + Route LoRA` 首测替代 `memory_direction` 通用 LLM，并通过 Python 离线、shadow、回退和 golden corpus 验证后再迁移 C# 的切换草案。
+6. `MemoryMergeSpecialistModelSwitchDraft.md`：用 `Qwen3-1.7B + Merge LoRA` 首测结构化、安全可拒绝的记忆融合，并保持候选、概率、权限和事务提交由本地代码权威控制的切换草案。
 
 ## 相关执行证据
 

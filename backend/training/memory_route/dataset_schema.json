@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "aisc-memory-route-dataset-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sample_id", "schema_version", "source_group", "split", "input", "raw_direction", "calibrated_direction", "label", "review", "calibration_evidence", "evidence"],
+  "properties": {
+    "sample_id": {"type": "string", "minLength": 1},
+    "schema_version": {"const": 1},
+    "source_group": {"type": "string", "minLength": 1},
+    "split": {"enum": ["unassigned", "train", "validation", "test"]},
+    "input": {"$ref": "#/$defs/input"},
+    "raw_direction": {"type": "object"},
+    "calibrated_direction": {"$ref": "#/$defs/direction"},
+    "label": {"$ref": "#/$defs/direction"},
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reviewer", "reviewed_at"],
+      "properties": {
+        "status": {"enum": ["pending", "approved", "rejected"]},
+        "reviewer": {"type": "string"},
+        "reviewed_at": {"type": "string"}
+      }
+    },
+    "calibration_evidence": {"type": "object"},
+    "evidence": {"type": "object"}
+  },
+  "$defs": {
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "npc_id", "query_text", "conversation_summary", "recent_turns", "recent_memories", "location_id", "location_display_text", "game_time_snapshot", "participant_ids", "known_entity_aliases", "mode"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "npc_id": {"type": "string", "minLength": 1},
+        "query_text": {"type": "string"},
+        "conversation_summary": {"type": "string"},
+        "recent_turns": {"type": "array", "items": {"type": "object", "required": ["speaker_id", "text"], "properties": {"speaker_id": {"type": "string"}, "text": {"type": "string"}}, "additionalProperties": false}},
+        "recent_memories": {"type": "array", "items": {"type": "string"}},
+        "location_id": {"type": "string"},
+        "location_display_text": {"type": "string"},
+        "game_time_snapshot": {"type": "string"},
+        "participant_ids": {"type": "array", "items": {"type": "string"}},
+        "known_entity_aliases": {"type": "array", "items": {"type": "string"}},
+        "mode": {"enum": ["player_dialogue", "npc_dialogue", "nightly_fixed_player"]}
+      }
+    },
+    "direction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entity_mentions", "location_mentions", "themes", "relation_facets", "time_scope", "source_preferences", "recall_intent", "negative_directions", "retrieval_query", "query_constraints"],
+      "properties": {
+        "entity_mentions": {"type": "array", "maxItems": 8, "items": {"type": "string", "maxLength": 80}},
+        "location_mentions": {"type": "array", "maxItems": 8, "items": {"type": "string", "maxLength": 80}},
+        "themes": {"type": "array", "minItems": 1, "items": {"enum": ["identity", "current_location", "recent_activity", "relationship", "cause", "past_event", "emotion", "object", "promise", "general"]}},
+        "relation_facets": {"type": "array", "items": {"enum": ["familiarity", "affinity", "occupation", "shared_event", "impression_basis", "knowledge_source"]}},
+        "time_scope": {"enum": ["current", "recent", "past", "any"]},
+        "source_preferences": {"type": "array", "items": {"enum": ["direct", "heard", "inferred"]}},
+        "recall_intent": {"enum": ["locate_person", "identify_entity", "explain_cause", "compare_relationship", "recall_event", "continue_reference", "general_recall"]},
+        "negative_directions": {"type": "array", "items": {"enum": ["unrelated_player_background", "unrelated_private_memory", "stale_location", "unrelated_person"]}},
+        "retrieval_query": {"type": "string", "maxLength": 512},
+        "query_constraints": {"type": "array", "items": {"enum": ["person_location", "identity", "relationship", "cause", "past_event", "recent"]}}
+      }
+    }
+  }
+}
