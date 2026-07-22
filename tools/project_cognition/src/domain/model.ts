@@ -16,6 +16,7 @@ export interface CodeSymbol {
   status?: ReviewStatus;
   source?: "analyzer" | "ai" | "manual";
   locked?: boolean;
+  location?: { startLine: number; endLine: number };
 }
 
 export interface FunctionalDomain {

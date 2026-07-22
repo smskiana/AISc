@@ -9,6 +9,9 @@
     "test": "npm run build && node --test dist/tests/*.test.js",
     "start": "node dist/src/server.js",
     "smoke:codebase": "npm run build && node dist/scripts/codebase-smoke.js",
+    "smoke:context": "npm run build && node dist/scripts/context-smoke.js",
+    "smoke:overview": "npm run build && node dist/scripts/overview-smoke.js",
+    "smoke:uml": "npm run build && node dist/scripts/uml-smoke.js",
     "package:vscode": "npm --prefix vscode-extension run package"
   },
   "dependencies": {

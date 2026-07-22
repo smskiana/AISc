@@ -23,6 +23,41 @@
 
 ## 错误列表
 
+### 2026-07-22：证据标签与导航载荷漂移
+
+- 一句话摘要：列表 label 与点击载荷必须从同一细粒度实体派生；不能显示 Method 却复用聚合 Class 作为导航对象。
+- 影响范围：IDE 证据面板、QuickPick、代码跳转、聚合关系和细粒度事实投影。
+- 何时优先回看：新增或修改“显示方法/字段证据并跳转源码”的交互前。
+- 明细：[2026-07-22_evidence_label_navigation_payload_drift.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-22_evidence_label_navigation_payload_drift.md:1)
+
+### 2026-07-22：关系表被误认为 UML 主视图
+
+- 一句话摘要：数据和命令闭环不等于真实宿主可用；必须覆盖 language provider 缺失和最终 Webview 脚本转义，逐项核对 UML 节点、边、布局与入口语义。
+- 影响范围：IDE 扩展、document symbol API、Webview、分类器投影和带明确 UI 验收标准的 execution。
+- 何时优先回看：准备把列表、表格或树视图认定为图形化交互阶段完成前。
+- 明细：[2026-07-22_relation_table_mistaken_for_uml.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-22_relation_table_mistaken_for_uml.md:1)
+
+### 2026-07-22：持久化认知缺少查询投影导致 IDE 不可达
+
+- 一句话摘要：写模型允许的每种合法状态都必须有读模型入口；不能因未建立正式归属就让已持久化实体从产品中消失。
+- 影响范围：CQRS/read model、功能树、探索状态、未归属实体和任何“写入成功但 UI 为空”的流程。
+- 何时优先回看：新增中间状态、proposed/confirmed 流转、虚拟节点或修改查询投影前。
+- 明细：[2026-07-22_persisted_cognition_missing_query_projection.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-22_persisted_cognition_missing_query_projection.md:1)
+
+### 2026-07-22：Scope capability 签发后二次解析导致范围漂移
+
+- 一句话摘要：局部更新必须结构化传递 IDE 上下文并冻结签发实体；preview / apply 重新搜索会造成范围漂移和固定预算上限假象。
+- 影响范围：MCP capability、IDE 当前上下文、范围解析、preview / apply 和任何带预算的实体搜索。
+- 何时优先回看：新增或修改 scope 签发、预览、应用、IDE 上下文参数或模糊搜索时。
+- 明细：[2026-07-22_scope_capability_reresolution_drift.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-22_scope_capability_reresolution_drift.md:1)
+
+### 2026-07-22：VSIX 排除依赖导致扩展宿主激活失败
+
+- 一句话摘要：`vsce --no-dependencies` 只能用于自包含入口；若编译产物仍 require 第三方包，VSIX 会安装成功但在 `activate()` 前加载失败。
+- 影响范围：VS Code 扩展、VSIX 打包、extension host 激活和任何使用 bundler/external 的 IDE adapter。
+- 何时优先回看：新增或修改 VS Code 扩展运行时依赖、打包参数、bundle external 或发布门禁前。
+- 明细：[2026-07-22_vscode_vsix_runtime_dependency_omitted.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-22_vscode_vsix_runtime_dependency_omitted.md:1)
+
 ### 2026-07-19：存档 schema 版本源分叉
 
 - 一句话摘要：提升存档 schema 时必须同步 DTO 默认值、仓储当前版本和迁移链终点，并用默认新档 prepare 回归锁定三者一致。

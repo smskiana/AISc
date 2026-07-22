@@ -14,12 +14,14 @@ test("stdio server exposes the complete tool and resource contract", async () =>
   try {
     const tools = await client.listTools();
     const names = new Set(tools.tools.map(item => item.name));
-    for (const name of ["get_primary_relations", "expand_relation_evidence", "check_scope_freshness", "confirm_domain_structure", "set_symbol_membership", "update_manual_summary", "reject_proposal"]) assert.ok(names.has(name), name);
+    for (const name of ["get_primary_relations", "expand_relation_evidence", "get_classifier_context", "check_scope_freshness", "confirm_domain_structure", "set_symbol_membership", "update_manual_summary", "reject_proposal"]) assert.ok(names.has(name), name);
     const templates = await client.listResourceTemplates();
     assert.equal(templates.resourceTemplates.length, 5);
     const overview = await client.callTool({ name: "get_domain_overview", arguments: { projectId: "AISc" } }) as { structuredContent?: { ok?: boolean } };
     assert.equal(overview.structuredContent?.ok, true);
     const invalid = await client.callTool({ name: "preview_scoped_update", arguments: { projectId: "AISc", scopeId: "missing", query: "x" } }) as { structuredContent?: { error?: { code?: string } } };
     assert.equal(invalid.structuredContent?.error?.code, "INVALID_SCOPE_ID");
+    const missingRelation = await client.callTool({ name: "expand_relation_evidence", arguments: { projectId: "AISc", relationId: "missing", limit: 10 } }) as { structuredContent?: { error?: { code?: string } } };
+    assert.equal(missingRelation.structuredContent?.error?.code, "RELATION_NOT_FOUND");
   } finally { await client.close(); }
 });

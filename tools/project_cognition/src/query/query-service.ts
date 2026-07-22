@@ -1,4 +1,6 @@
 import { FactRelation, ProjectSnapshot, SemanticRelation } from "../domain/model.js";
+import { CognitionError } from "../domain/errors.js";
+import { UNCLASSIFIED_DOMAIN_ID } from "./domain-overview.js";
 
 export interface RelationEvidence {
   relation: SemanticRelation;
@@ -9,6 +11,10 @@ export interface RelationEvidence {
 /** Returns stored primary relations in stable display order. */
 export function getPrimaryRelations(snapshot: ProjectSnapshot, nodeId: string): SemanticRelation[] {
   const memberIds = new Set(snapshot.memberships.filter(item => item.domainId === nodeId).map(item => item.symbolId));
+  if (nodeId === UNCLASSIFIED_DOMAIN_ID) {
+    const assignedIds = new Set(snapshot.memberships.map(item => item.symbolId));
+    for (const symbol of snapshot.symbols) if (!assignedIds.has(symbol.id)) memberIds.add(symbol.id);
+  }
   memberIds.add(nodeId);
   return snapshot.semantics
     .filter(item => memberIds.has(item.sourceSymbolId) || memberIds.has(item.targetSymbolId))
@@ -16,9 +22,9 @@ export function getPrimaryRelations(snapshot: ProjectSnapshot, nodeId: string): 
 }
 
 /** Expands a semantic relation into bounded, current fact evidence. */
-export function expandRelationEvidence(snapshot: ProjectSnapshot, relationId: string, limit: number): RelationEvidence | undefined {
+export function expandRelationEvidence(snapshot: ProjectSnapshot, relationId: string, limit: number): RelationEvidence {
   const relation = snapshot.semantics.find(item => item.id === relationId);
-  if (!relation) return undefined;
+  if (!relation) throw new CognitionError("RELATION_NOT_FOUND", "Semantic relation does not exist.", { relationId });
   const facts = new Map(snapshot.facts.map(item => [item.id, item]));
   const evidence = relation.evidenceIds.map(id => facts.get(id)).filter((item): item is FactRelation => Boolean(item)).slice(0, limit);
   return { relation, evidence, missingEvidenceIds: relation.evidenceIds.filter(id => !facts.has(id)) };

@@ -16,16 +16,18 @@
 
 ## 当前状态
 
-阶段 A/B/C 的第一轮实现已完成执行期最低门禁：查询、范围更新、人工治理、只读资源、revision 复核和 VS Code 交互闭环均已落地。当前状态是“实现完成，待独立测试”；真实 AI 模型、团队同步、后台扫描、多仓库与第二 IDE 仍不在本轮范围。
+阶段 A/B 的自动化、真实 codebase-memory smoke、Codex MCP 实际加载和 VSIX 构建已通过独立测试。Y08/Y09 的关系点击和 tooltip 已通过真实宿主复测；随后用户复核发现方法 evidence 的 label 与导航载荷不同源，`Start -> Load` 会退化为整个 Class。当前 classifier context 已返回带文件和行号的 Method symbols，证据选择明确导航调用方方法，并由真实 smoke 锁定 Method 位置。当前状态是“AB02 修复完成，待原 test 继续有界复测”；阶段 C 还需处理 AA09、AA13、40 节点和最长名称门禁。
 
 ## 下一阶段
 
-1. 在独立测试会话覆盖范围不变量、revision 过期、并发冲突、回滚、真实 MCP contract 和 VS Code 宿主交互，并创建同主题 `_test.md`。
-2. 对 VS Code 功能树、关系展开、长名称、窄窗口和大节点数量执行截图验收。
-3. 在固定事实与确定性 fixture 通过独立测试后，再评估真实 AI Semantics Adapter；阶段 D 另开 plan。
+1. 在原 test 复测 AB02：选择 `Start -> Load` 后必须精确定位 `GameManager.Start` 方法范围。
+2. 继续修复和复测 AA09 多类文件首类确定性、AA13 关系键盘焦点、40 节点预算与最长名称 fixture。
+3. 在新 Codex 任务复核真实 `RELATION_NOT_FOUND` contract；测试通过前复杂任务整体仍不得认定完成。
+4. 阶段 A-C 全部通过后，再评估真实 AI Semantics Adapter；阶段 D 另开 plan。
 
 ## 相关入口
 
 1. `tools/project_cognition/README.md`
 2. `docs/AIChanges/ProjectGovernance/2026-07-22_IDE_MCP项目认知图工具_plan.md`
 3. `docs/AIChanges/ProjectCognition/README.md`
+4. `docs/AIChanges/ProjectCognition/2026-07-22_IDE_MCP项目认知图工具_test.md`
