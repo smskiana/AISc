@@ -28,9 +28,10 @@ from .retrieval_contracts import (
 )
 from .retrieval_context import RetrievalContextAssembler
 from .retrieval_diagnostics import RetrievalTraceStore, retrieval_trace_store
-from .retrieval_direction import DirectionResolver, LocalDirectionProvider, LlmDirectionProvider, NPC_NAMES
+from .retrieval_direction import DirectionResolver, LocalDirectionProvider, NPC_NAMES
 from .retrieval_policy import RetrievalPolicyRegistry
 from .retrieval_query import RetrievalQueryPlanner
+from .route_specialist_provider import DirectionProviderRuntime
 
 logger = logging.getLogger("sakurabashi.retrieval")
 
@@ -79,7 +80,7 @@ def _player_retrieval_hints() -> tuple[str, ...]:
 class RetrievalEngine:
     """稳定 facade：兼容入口、策略选择、结果重建和统一诊断。"""
 
-    def __init__(self, db: SQLiteClient, lancedb=None, clarity_recover=None, policy_registry: RetrievalPolicyRegistry | None = None, trace_store: RetrievalTraceStore | None = None, llm=None):
+    def __init__(self, db: SQLiteClient, lancedb=None, clarity_recover=None, policy_registry: RetrievalPolicyRegistry | None = None, trace_store: RetrievalTraceStore | None = None, llm=None, direction_provider_runtime: DirectionProviderRuntime | None = None):
         """注入存储和可替换策略依赖。"""
         self.db = db
         self.lancedb = lancedb
@@ -87,6 +88,7 @@ class RetrievalEngine:
         self.policy_registry = policy_registry or RetrievalPolicyRegistry()
         self.trace_store = trace_store or retrieval_trace_store
         self.prompt_assembler = PromptAssembler()
+        self.direction_provider_runtime = direction_provider_runtime or DirectionProviderRuntime(self.policy_registry, self.prompt_assembler, llm)
         self.direction_resolver = DirectionResolver(self.prompt_assembler)
         self.query_planner = RetrievalQueryPlanner()
         self.context_assembler = RetrievalContextAssembler()
@@ -134,7 +136,7 @@ class RetrievalEngine:
             route_context["_context_budget"] = direction_context.get("_context_budget", {})
             route_context["_direction"] = direction_resolution.direction
         elif policy.strategy != RetrievalStrategy.LLM_FULL_ROUTE:
-            provider = LocalDirectionProvider() if policy.strategy == RetrievalStrategy.LOCAL_ONLY else LlmDirectionProvider(self.prompt_assembler, LocalDirectionProvider(), self.llm_retriever.llm)
+            provider = self.direction_provider_runtime.local() if policy.strategy == RetrievalStrategy.LOCAL_ONLY else self.direction_provider_runtime.chain(policy.direction_chain)
             direction_context = self.direction_resolver.build_context(request, policy.context, route_context.get("recent_memories", []))
             route_context["_context_budget"] = direction_context.get("_context_budget", {})
             direction_resolution = self.direction_resolver.resolve(request, direction_context, provider)
@@ -142,7 +144,7 @@ class RetrievalEngine:
         else:
             direction_context = self.direction_resolver.build_context(request, policy.context, route_context.get("recent_memories", []))
             route_context["_context_budget"] = direction_context.get("_context_budget", {})
-            direction_resolution = self.direction_resolver.resolve(request, direction_context, LocalDirectionProvider())
+            direction_resolution = self.direction_resolver.resolve(request, direction_context, self.direction_provider_runtime.local())
             direction_resolution = replace(direction_resolution, source="not_applicable")
             route_context["_direction"] = direction_resolution.direction
         query_plan = self.query_planner.plan(request, direction_resolution, policy)
@@ -157,9 +159,11 @@ class RetrievalEngine:
         else:
             outcome = self.deep_retriever.search(DeepSearchRequest(request.npc_id, target_id, start_ids, target_start_id, direction_resolution.direction, policy.local_search, vector_anchor_ids, side_effects_disabled))
             selected_edges, node_ids, candidates = outcome.selected_edges, outcome.node_ids, outcome.candidate_edges
-            stop_reason, failure_reason, degraded = outcome.stop_reason, outcome.failure_reason, direction_resolution.source.startswith("llm_")
+            provider_diagnostics = direction_resolution.provider_diagnostics
+            degraded = bool(provider_diagnostics and provider_diagnostics.requested_provider != provider_diagnostics.adopted_provider)
+            stop_reason, failure_reason = outcome.stop_reason, outcome.failure_reason
             layer_stats, counters = outcome.layer_stats, outcome.counters
-            llm_route_calls = 0 if policy.strategy == RetrievalStrategy.LOCAL_ONLY else 1 if direction_resolution.source == "llm" else 0
+            llm_route_calls = 0
         graph_node_count = len(node_ids)
         fallback_ids: list[str] = []
         if len(node_ids) < max(1, policy.context.final_memory_limit // 3):
@@ -351,6 +355,22 @@ class RetrievalEngine:
 
     def _build_trace(self, trace_id, request, mode, policy, resolution, starts, vector_hits, edges, assembly, query_plan, vector_query, layer_stats, counters, candidates, stop_reason, failure_reason, degraded, elapsed, fallback_ids, context_budget):
         """将内部 outcome 映射为不含隐私长文本的 trace。"""
+        provider = resolution.provider_diagnostics if resolution else None
+        provider_diagnostics = {
+            "direction_provider_requested": provider.requested_provider,
+            "direction_provider_adopted": provider.adopted_provider,
+            "direction_provider_chain": list(provider.chain),
+            "direction_model_id": provider.model_id,
+            "direction_model_revision": provider.model_revision,
+            "direction_adapter_id": provider.adapter_id,
+            "direction_schema_version": provider.schema_version,
+            "direction_inference_ms": sum(item.elapsed_ms for item in provider.attempts),
+            "direction_queue_ms": sum(item.queue_ms for item in provider.attempts),
+            "direction_fallback_reasons": list(provider.fallback_reasons),
+            "direction_worker_state": provider.worker_state,
+            "direction_model_call_count": provider.model_call_count,
+            "direction_provider_attempts": [{"provider_id": item.provider_id, "status": item.status, "failure_reason": item.failure_reason, "elapsed_ms": item.elapsed_ms, "queue_ms": item.queue_ms} for item in provider.attempts],
+        } if provider else {"direction_provider_requested": "not_applicable", "direction_provider_adopted": "not_applicable", "direction_provider_chain": [], "direction_model_call_count": 0}
         direction = {
             "entity_mentions": resolution.direction.entity_mentions,
             "location_mentions": resolution.direction.location_mentions,
@@ -368,6 +388,7 @@ class RetrievalEngine:
             mode=mode, strategy=policy.strategy.value, config_version=policy.version,
             policy_summary={
                 "strategy": policy.strategy.value,
+                "direction_chain": list(policy.direction_chain),
                 "final_memory_limit": policy.context.final_memory_limit,
                 "final_context_max_chars": policy.context.final_context_max_chars,
                 "max_direction_context_chars": policy.context.max_direction_context_chars,
@@ -386,7 +407,7 @@ class RetrievalEngine:
             selected_edge_ids=[str(item.get("edge_id")) for item in edges if item.get("edge_id")],
             retrieved_node_ids=[entry.node_id for entry in assembly.entries], vector_query_preview=vector_query[:512],
             vector_hit_usage=[{"node_id": hit.node_id, "rank": hit.rank, "similarity": hit.similarity, "usage": "anchor_discovery"} for hit in vector_hits] + [{"node_id": node_id, "usage": "content_fallback"} for node_id in fallback_ids],
-            diagnostics={"candidate_count": len(candidates), "expanded_edges": counters.get("expanded_edges", counters.get("candidate_edges", 0)), "original_query_preview": query_plan.original_query[:240], "original_query_chars": len(query_plan.original_query), "retrieval_query_preview": query_plan.retrieval_query[:240], "retrieval_query_chars": len(query_plan.retrieval_query), "retrieval_query_source": query_plan.retrieval_query_source, "query_constraints": query_plan.query_constraints, "selected_recent_turn_preview": query_plan.selected_recent_turn[:240], "selected_recent_turn_chars": len(query_plan.selected_recent_turn), "selection_reason": query_plan.selection_reason, "embedding_query_preview": query_plan.embedding_query[:512], "embedding_query_chars": len(query_plan.embedding_query), "direction_validation_errors": resolution.validation_errors if resolution else [], "direction_calibrations": resolution.calibrations if resolution else [], "query_fallback_reason": query_plan.fallback_reason, "graph_candidate_ids": [str(item.get("node_id")) for item in candidates], "final_entries": [{"node_id": entry.node_id, "type": entry.node_type, "score": entry.score, "score_components": [{"name": name, "value": value} for name, value in entry.score_components.items()], "rendered_chars": len(entry.rendered_text)} for entry in assembly.entries], "evicted_entries": assembly.evicted_entries, "final_entry_count": len(assembly.entries), "final_context_chars": len(assembly.context_text)},
+            diagnostics={**provider_diagnostics, "candidate_count": len(candidates), "expanded_edges": counters.get("expanded_edges", counters.get("candidate_edges", 0)), "original_query_preview": query_plan.original_query[:240], "original_query_chars": len(query_plan.original_query), "retrieval_query_preview": query_plan.retrieval_query[:240], "retrieval_query_chars": len(query_plan.retrieval_query), "retrieval_query_source": query_plan.retrieval_query_source, "query_constraints": query_plan.query_constraints, "selected_recent_turn_preview": query_plan.selected_recent_turn[:240], "selected_recent_turn_chars": len(query_plan.selected_recent_turn), "selection_reason": query_plan.selection_reason, "embedding_query_preview": query_plan.embedding_query[:512], "embedding_query_chars": len(query_plan.embedding_query), "direction_validation_errors": resolution.validation_errors if resolution else [], "direction_calibrations": resolution.calibrations if resolution else [], "query_fallback_reason": query_plan.fallback_reason, "graph_candidate_ids": [str(item.get("node_id")) for item in candidates], "final_entries": [{"node_id": entry.node_id, "type": entry.node_type, "score": entry.score, "score_components": [{"name": name, "value": value} for name, value in entry.score_components.items()], "rendered_chars": len(entry.rendered_text)} for entry in assembly.entries], "evicted_entries": assembly.evicted_entries, "final_entry_count": len(assembly.entries), "final_context_chars": len(assembly.context_text)},
             stop_reason=stop_reason, failure_reason=failure_reason, degraded_to_local=degraded, elapsed_sec=round(elapsed, 6),
         )
 
@@ -425,8 +446,8 @@ class RetrievalEngine:
 retrieval_engine: RetrievalEngine | None = None
 
 
-def init_retrieval(db: SQLiteClient, lancedb=None, clarity_recover=None) -> RetrievalEngine:
+def init_retrieval(db: SQLiteClient, lancedb=None, clarity_recover=None, direction_provider_runtime: DirectionProviderRuntime | None = None) -> RetrievalEngine:
     """初始化全局检索 facade。"""
     global retrieval_engine
-    retrieval_engine = RetrievalEngine(db, lancedb, clarity_recover=clarity_recover)
+    retrieval_engine = RetrievalEngine(db, lancedb, clarity_recover=clarity_recover, direction_provider_runtime=direction_provider_runtime)
     return retrieval_engine

@@ -1,0 +1,11 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { emptySnapshot } from "../src/domain/model.js";
+import { resolveScope, validateScope } from "../src/scope/scope-engine.js";
+
+const symbols = ["a", "b", "c"].map((id, index) => ({ id, projectId: "AISc", language: "C#", kind: "Class", filePath: `f${index}.cs`, qualifiedName: id, analyzerIdentity: id }));
+
+test("scope enforces symbol and file budgets", () => { const snapshot = emptySnapshot("AISc"); const scope = resolveScope({ projectId: "AISc", query: "x", seedSymbols: symbols }, snapshot, { maxFiles: 2, maxSymbols: 2, maxRelations: 10 }); assert.deepEqual(scope.mutationScope, ["a", "b"]); assert.deepEqual(scope.excluded, ["c"]); validateScope(scope, snapshot); });
+test("ordinary update cannot mutate another confirmed domain", () => { const snapshot = emptySnapshot("AISc"); snapshot.domains.push({ id: "target", projectId: "AISc", name: "Target", summary: "", status: "confirmed", source: "manual", locked: true }, { id: "other", projectId: "AISc", name: "Other", summary: "", status: "confirmed", source: "manual", locked: true }); snapshot.memberships.push({ id: "m", domainId: "other", symbolId: "b", type: "primary", status: "confirmed", source: "manual", locked: true }); const scope = resolveScope({ projectId: "AISc", query: "x", seedSymbols: symbols.slice(0, 2), requestedDomainId: "target" }, snapshot, { maxFiles: 5, maxSymbols: 5, maxRelations: 10 }); assert.deepEqual(scope.mutationScope, ["a"]); assert.ok(scope.warnings.includes("CROSS_DOMAIN_READ_ONLY")); });
+test("full update requires exact separate confirmation", () => { const snapshot = emptySnapshot("AISc"); assert.throws(() => resolveScope({ projectId: "AISc", query: "x", seedSymbols: symbols, fullUpdate: true, explicitConfirmation: "yes" }, snapshot, { maxFiles: 5, maxSymbols: 5, maxRelations: 10 }), /FULL_UPDATE_CONFIRMATION_REQUIRED/); });
+test("scope rejects a changed code revision", () => { const snapshot = emptySnapshot("AISc", "rev-1"); const scope = resolveScope({ projectId: "AISc", query: "x", seedSymbols: symbols, codeRevision: "rev-1" }, snapshot, { maxFiles: 5, maxSymbols: 5, maxRelations: 10 }); assert.throws(() => validateScope(scope, snapshot, "rev-2"), /SCOPE_REVISION_STALE/); });

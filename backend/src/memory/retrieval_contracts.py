@@ -187,6 +187,42 @@ class DirectionResolution:
     validation_errors: list[str] = field(default_factory=list)
     calibrations: list[str] = field(default_factory=list)
     llm_output_summary: str = ""
+    provider_diagnostics: DirectionProviderDiagnostics | None = None
+
+
+@dataclass(frozen=True)
+class DirectionProviderAttempt:
+    """记录一次方向 provider 尝试的安全、有界结果。"""
+    provider_id: str
+    status: str
+    failure_reason: str = ""
+    elapsed_ms: int = 0
+    queue_ms: int = 0
+    model_call_count: int = 0
+
+
+@dataclass(frozen=True)
+class DirectionProviderDiagnostics:
+    """记录冻结 provider chain 的采用结果和模型身份。"""
+    requested_provider: str = ""
+    adopted_provider: str = ""
+    chain: tuple[str, ...] = ()
+    attempts: tuple[DirectionProviderAttempt, ...] = ()
+    model_id: str = ""
+    model_revision: str = ""
+    adapter_id: str = ""
+    schema_version: int = 1
+    worker_state: str = "not_applicable"
+
+    @property
+    def model_call_count(self) -> int:
+        """汇总 chain 内实际发出的方向模型调用次数。"""
+        return sum(item.model_call_count for item in self.attempts)
+
+    @property
+    def fallback_reasons(self) -> tuple[str, ...]:
+        """按尝试顺序返回稳定失败原因。"""
+        return tuple(item.failure_reason for item in self.attempts if item.failure_reason)
 
 
 @dataclass(frozen=True)
@@ -254,7 +290,23 @@ class RetrievalModePolicy:
     llm_route: LlmRoutePolicy
     scoring: dict[str, float]
     final_scoring: dict[str, float]
-    version: int = 1
+    direction_chain: tuple[str, ...] = ("local",)
+    version: int = 2
+
+
+@dataclass(frozen=True)
+class DirectionProviderConfig:
+    """一个已严格校验的方向 provider 配置。"""
+    provider_id: str
+    kind: str
+    options: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class DirectionProviderRegistryConfig:
+    """方向 provider 注册表及默认冻结 chain。"""
+    default_chain: tuple[str, ...]
+    providers: dict[str, DirectionProviderConfig]
 
 
 @dataclass(frozen=True)

@@ -1,12 +1,15 @@
 """记忆检索 YAML 配置的读取、严格校验和 typed policy 注册表。"""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from .retrieval_contracts import (
+    DirectionProviderConfig,
+    DirectionProviderRegistryConfig,
     LocalSearchPolicy,
     LlmRoutePolicy,
     RetrievalExecutionOptions,
@@ -14,6 +17,24 @@ from .retrieval_contracts import (
     RetrievalStrategy,
     SearchBudget,
 )
+
+
+class _UniqueKeyLoader(yaml.SafeLoader):
+    """拒绝 YAML mapping 中的重复 key。"""
+
+
+def _construct_unique_mapping(loader: _UniqueKeyLoader, node: yaml.MappingNode, deep: bool = False) -> dict[str, Any]:
+    """构造 mapping，并在覆盖发生前报告重复字段。"""
+    mapping: dict[str, Any] = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            raise yaml.constructor.ConstructorError("mapping", node.start_mark, f"duplicate key: {key}", key_node.start_mark)
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+_UniqueKeyLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _construct_unique_mapping)
 
 
 DEFAULT_SCORING = {
@@ -69,6 +90,10 @@ MAX_SAFE = {
     "selected_recent_turn_chars": 1024, "embedding_query_chars": 2048,
     "final_context_max_chars": 12000,
 }
+PROVIDER_KINDS = {"subprocess_specialist", "general_llm", "local"}
+SPECIALIST_FIELDS = {"kind", "model_id", "revision", "adapter_id", "adapter_sha256", "python_env", "adapter_path_env", "hf_home_env", "timeout_ms", "max_new_tokens", "restart_cooldown_ms"}
+ENV_NAME_PATTERN = re.compile(r"^[A-Z][A-Z0-9_]*$")
+HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 class RetrievalPolicyRegistry:
@@ -79,13 +104,14 @@ class RetrievalPolicyRegistry:
         self.config_path = Path(config_path) if config_path else Path(__file__).resolve().parents[2] / "config" / "memory_retrieval.yaml"
         raw = payload if payload is not None else self._load()
         self.version = self._validate_root(raw)
+        self.direction_providers = self._build_provider_registry(raw["direction_providers"])
         self._policies = {mode: self._build_policy(mode, data) for mode, data in raw["modes"].items()}
 
     def _load(self) -> dict[str, Any]:
         """读取严格要求存在的 YAML 配置。"""
         try:
             with self.config_path.open("r", encoding="utf-8") as stream:
-                data = yaml.safe_load(stream) or {}
+                data = yaml.load(stream, Loader=_UniqueKeyLoader) or {}
         except (OSError, yaml.YAMLError) as error:
             raise ValueError(f"memory_retrieval_config_error:{error}") from error
         return data
@@ -93,21 +119,75 @@ class RetrievalPolicyRegistry:
     @staticmethod
     def _validate_root(raw: dict[str, Any]) -> int:
         """校验根级字段、版本和业务模式集合。"""
-        if not isinstance(raw, dict) or set(raw) != {"version", "modes"}:
+        if not isinstance(raw, dict) or set(raw) != {"version", "direction_providers", "modes"}:
             raise ValueError("memory_retrieval_config_unknown_root_field")
-        if raw.get("version") != 1:
+        if raw.get("version") != 2:
             raise ValueError("memory_retrieval_config_invalid_version")
         if not isinstance(raw.get("modes"), dict) or set(raw["modes"]) != MODE_NAMES:
             raise ValueError("memory_retrieval_config_modes_must_match_supported_modes")
-        return 1
+        return 2
+
+    def _build_provider_registry(self, raw: Any) -> DirectionProviderRegistryConfig:
+        """严格校验 provider 注册表、冻结身份和默认 chain。"""
+        if not isinstance(raw, dict) or set(raw) != {"default_chain", "providers"}:
+            raise ValueError("direction_providers_fields_must_be_complete_and_known")
+        providers_raw = raw.get("providers")
+        if not isinstance(providers_raw, dict) or not providers_raw:
+            raise ValueError("direction_providers_must_not_be_empty")
+        providers: dict[str, DirectionProviderConfig] = {}
+        for provider_id, value in providers_raw.items():
+            if not isinstance(provider_id, str) or not re.fullmatch(r"[a-z][a-z0-9_]*", provider_id):
+                raise ValueError("invalid_direction_provider_id")
+            if not isinstance(value, dict) or value.get("kind") not in PROVIDER_KINDS:
+                raise ValueError(f"{provider_id}:unknown_provider_kind")
+            kind = str(value["kind"])
+            if kind == "subprocess_specialist":
+                self._validate_specialist(provider_id, value)
+            elif set(value) != {"kind"}:
+                raise ValueError(f"{provider_id}:unknown_provider_field")
+            providers[provider_id] = DirectionProviderConfig(provider_id, kind, {key: item for key, item in value.items() if key != "kind"})
+        return DirectionProviderRegistryConfig(self._validate_chain("default", raw.get("default_chain"), providers), providers)
+
+    def _validate_specialist(self, provider_id: str, raw: dict[str, Any]) -> None:
+        """校验专项 worker 配置的完整字段与安全范围。"""
+        if set(raw) != SPECIALIST_FIELDS:
+            raise ValueError(f"{provider_id}:specialist_fields_must_be_complete_and_known")
+        if any(not isinstance(raw[name], str) or not raw[name].strip() for name in ("model_id", "revision", "adapter_id")):
+            raise ValueError(f"{provider_id}:identity_invalid")
+        if not isinstance(raw["adapter_sha256"], str) or not HASH_PATTERN.fullmatch(raw["adapter_sha256"]):
+            raise ValueError(f"{provider_id}:adapter_sha256_invalid")
+        for name in ("python_env", "adapter_path_env", "hf_home_env"):
+            if not isinstance(raw[name], str) or not ENV_NAME_PATTERN.fullmatch(raw[name]):
+                raise ValueError(f"{provider_id}:{name}_must_be_env_name")
+        self._bounded_integer(provider_id, "timeout_ms", raw["timeout_ms"], 100, 60000)
+        self._bounded_integer(provider_id, "max_new_tokens", raw["max_new_tokens"], 16, 1024)
+        self._bounded_integer(provider_id, "restart_cooldown_ms", raw["restart_cooldown_ms"], 0, 60000)
+
+    @staticmethod
+    def _bounded_integer(scope: str, name: str, value: Any, minimum: int, maximum: int) -> int:
+        """校验 provider 专用整数范围并拒绝布尔值。"""
+        if isinstance(value, bool) or not isinstance(value, int) or not minimum <= value <= maximum:
+            raise ValueError(f"{scope}:{name}_invalid")
+        return value
+
+    @staticmethod
+    def _validate_chain(scope: str, value: Any, providers: dict[str, DirectionProviderConfig]) -> tuple[str, ...]:
+        """校验非空、无重复、已注册且以 local 结束的 chain。"""
+        if not isinstance(value, list) or not value or any(not isinstance(item, str) for item in value):
+            raise ValueError(f"{scope}:direction_chain_invalid")
+        chain = tuple(value)
+        if len(set(chain)) != len(chain) or any(item not in providers for item in chain) or chain[-1] != "local":
+            raise ValueError(f"{scope}:direction_chain_invalid")
+        return chain
 
     def _build_policy(self, mode: str, raw: dict[str, Any]) -> RetrievalModePolicy:
         """将一个业务模式的嵌套字典转换为不可变 DTO。"""
-        if not isinstance(raw, dict) or set(raw) - {"strategy", "context", "local_search", "llm_route", "result", "query", "scoring", "final_scoring"}:
+        if not isinstance(raw, dict) or set(raw) - {"strategy", "direction_chain", "context", "local_search", "llm_route", "result", "query", "scoring", "final_scoring"}:
             raise ValueError(f"{mode}:unknown_policy_field")
         strategy = raw.get("strategy")
         if strategy not in STRATEGY_NAMES:
             raise ValueError(f"{mode}:unknown_strategy:{strategy}")
+        chain = self._validate_chain(mode, raw.get("direction_chain", list(self.direction_providers.default_chain)), self.direction_providers.providers)
         context = self._section(mode, raw, "context", CONTEXT_KEYS)
         local = self._section(mode, raw, "local_search", LOCAL_KEYS)
         llm_route = self._section(mode, raw, "llm_route", LLM_KEYS)
@@ -179,6 +259,7 @@ class RetrievalPolicyRegistry:
             llm_route=route_policy,
             scoring=scoring,
             final_scoring=final_scoring,
+            direction_chain=chain,
             version=self.version,
         )
 

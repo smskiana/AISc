@@ -162,3 +162,31 @@
 - 影响范围：PowerShell 临时脚本、路径变量、测试收口和多步骤文档校验。
 - 何时优先回看：编写包含多个临时变量的 PowerShell 验证命令前。
 - 明细：[2026-07-20_powershell_error_automatic_variable.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-20_powershell_error_automatic_variable.md:1)
+
+### 2026-07-21：SHA-256 抄录缺位但未在冻结时拦截
+
+- 一句话摘要：冻结哈希不能只目视复制，必须同时校验 64 位小写十六进制格式并对目标实物重新计算后逐值比较。
+- 影响范围：模型 Adapter、训练 corpus、报告、配置、发布清单和任何以 SHA-256 固定身份的资产。
+- 何时优先回看：把外部资产 SHA-256 写入 plan、execution、test、配置或 manifest 前。
+- 明细：[2026-07-21_sha256_transcription_length_gate.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-21_sha256_transcription_length_gate.md:1)
+
+### 2026-07-21：Windows 子进程 JSONL 标准流代码页错配
+
+- 一句话摘要：父进程的 `Popen(encoding="utf-8")` 不会替子进程配置标准流，中文 JSONL worker 必须在入口显式把 stdin/stdout/stderr 重配为 UTF-8。
+- 影响范围：Windows 本地模型 worker、JSONL 子进程协议、中文 Prompt、tokenizer 和结构化输出。
+- 何时优先回看：新增或修改通过 Windows pipe 传递中文 JSONL 的 Python 子进程前。
+- 明细：[2026-07-21_windows_subprocess_jsonl_stdio_encoding.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-21_windows_subprocess_jsonl_stdio_encoding.md:1)
+
+### 2026-07-21：Windows 下空 CUDA_VISIBLE_DEVICES 未禁用 GPU
+
+- 一句话摘要：空字符串不能证明 CUDA 已屏蔽，应使用 `CUDA_VISIBLE_DEVICES=-1` 并在目标 venv 直接断言 `torch.cuda.is_available() is False`。
+- 影响范围：Windows、PyTorch/CUDA、本地模型 worker 和 GPU 故障注入测试。
+- 何时优先回看：准备验证 CUDA 不可用、CPU fallback 或 GPU 隔离行为前。
+- 明细：[2026-07-21_windows_cuda_visible_devices_empty.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-21_windows_cuda_visible_devices_empty.md:1)
+
+### 2026-07-21：后端脚本按文件路径启动时缺少项目根
+
+- 一句话摘要：`python backend/scripts/tool.py` 不会自动把仓库根加入 `sys.path`，新 CLI 必须复用项目根初始化并测试真实文件入口。
+- 影响范围：后端诊断脚本、维护 CLI、文档命令和模块导入。
+- 何时优先回看：新增直接导入 `backend.*` 的 `backend/scripts/*.py` 前。
+- 明细：[2026-07-21_backend_script_missing_project_root.md](/F:/GameProject/unity/AISc/docs/DesignDocs/errors/2026-07-21_backend_script_missing_project_root.md:1)

@@ -29,13 +29,14 @@
 10. 已用 Day 4 真实运行图与真实 LLM 复测旧本地/LLM 路由；公开策略仍为 `local_only`、`llm_guided_local`、`llm_full_route`。默认玩家=引导深搜、NPC-NPC=完全本地；午夜固定玩家目标通过受控方向走 `local_only`，参数锁定为 `max_depth=8`、`beam_width=12`、`max_neighbors_per_node=16`、`max_expanded_edges=48`。九组合离线评估入口为 `backend/scripts/evaluate_deep_retrieval.py`。
 11. 玩家正式对话检索已在每轮使用最新发言和近期对白重新路由；图起点保持既有策略，不再由话题实体扩张，也不在路由前预查话题人物关系。
 12. 午夜重阶段由 `MidnightCoordinator` 编排：玩家印象生成与事件提取并发，图演化等待提取结束，玩家印象由协调线程顺序提交；NPC-NPC 基准和 delta 不在午夜重建或清空。
+13. R3 v2 运行时接入及其独立验收证据继续保留，但 A/B/C 实验已选择 C：玩家、NPC-NPC 与午夜正式默认均切为 `local_only + [local]`，生产 provider 注册表不再注册或预热 R3 worker。实时检索由 `LocalDirectionProvider` 与 `RetrievalQueryPlanner` 确定性构造唯一 embedding query；`general_llm`、显式 R3 测试能力和 `llm_full_route` 仍保留。
 
 ## 下一阶段建议
 
 1. 做玩家事件前端触发点，让真实玩家行动进入短期记忆。
 2. 增加检索诊断 UI 或调试面板。
 3. 做融合质量评估和可达性统计。
-4. 用真实图和真实 LLM 长测三策略质量、延迟和预算；默认策略与参数配置见 `backend/config/memory_retrieval.yaml`。
+4. R3 v2 约 9-11 秒热路径是切换到零 LLM 默认路线的历史原因；后续用 Unity 实际对话补充首轮、后续轮墙钟与 p95 证据，不把专项模型重新放回默认链。默认策略与参数配置见 `backend/config/memory_retrieval.yaml`。
 5. 修日计划非法空 location 对记忆和行为链路的干扰。
 6. 前端正常流程、协议 / 存档底座和夜间主流程稳定后，再实现概率化节点融合：
    - 用“融合可能性 + 午夜概率抽签”替代单纯高相似度硬阈值。
@@ -246,7 +247,9 @@ else:
 3. `LlmGuidedLocalDeepRetrievalDraft.md`：三模式可配置记忆路由的需求来源；执行案和记录见 `docs/AIChanges/Memory/2026-07-17_LLM定向本地深层记忆检索_plan.md` 与对应 execution。执行案提供 `local_only`、`llm_guided_local`、`llm_full_route`，默认玩家=引导深搜、NPC-NPC=完全本地、夜间=高预算引导深搜。
 4. `LlmRetrievalQueryVectorRoutingFixDraft.md`：LLM 检索想法与原问题、至多一条相关近期对白组成单次向量 query，并由本地实体校准、图路由和最终原子条目选择收口的设计来源；已按 `docs/AIChanges/Memory/2026-07-17_LLM检索想法向量路由修复_plan.md` 实施，执行证据见同目录对应 execution。
 5. `MemoryRoutingSpecialistModelSwitchDraft.md`：用 `Qwen3-0.6B + Route LoRA` 首测替代 `memory_direction` 通用 LLM，并通过 Python 离线、shadow、回退和 golden corpus 验证后再迁移 C# 的切换草案。
-6. `MemoryMergeSpecialistModelSwitchDraft.md`：用 `Qwen3-1.7B + Merge LoRA` 首测结构化、安全可拒绝的记忆融合，并保持候选、概率、权限和事务提交由本地代码权威控制的切换草案。
+6. `MemoryMergeSpecialistModelSwitchDraft.md`：用与 R3 v2 共享冻结底模 runtime 的 `Qwen3-0.6B + Merge LoRA` 首测结构化、安全可拒绝的记忆融合，并保持独立 Adapter、validator、失败策略以及本地候选、概率、权限和事务权威。
+7. `MemoryRouteR3V2RuntimeIntegrationDraft.md`：把已冻结的 R3 v2 作为 `llm_guided_local` 默认方向 provider、保留三种现有检索策略，并以可共享 0.6B 底模的常驻本地 worker、可配置 provider chain、稳定回退和独立检索级验收接入运行时的草案。
+8. `MemoryRouteVectorQueryHintExperimentDraft.md`：先用 LongCat 对比完整方向 JSON、单句向量 query hint 和零 LLM 确定性 query；只有单句在检索质量、tokens 和延迟上同时胜出，才进入新本地 Adapter 训练，不直接修改现有 R3 v2 生产契约。
 
 ## 相关执行证据
 

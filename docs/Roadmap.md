@@ -20,6 +20,7 @@
 | 编号 | 工作流 | 当前阶段 | 近期目标 | 入口 |
 |------|--------|----------|----------|------|
 | GOV | 项目治理 | 功能索引层已落地 | 维护功能 README、Workstream、ADR 与执行证据的一致性 | `docs/Workstreams/ProjectGovernance/README.md` |
+| COG | 项目认知工具 | 核心原型可运行，实现未完成 | 补齐人工治理、关系证据查询与 VS Code 预览交互后再进入独立测试 | `docs/Workstreams/ProjectCognition/README.md` |
 | MEM | 记忆系统 | v0.7 工程口径已收敛 | 保持轻量图 + 向量数据层，补诊断与质量评估，不扩张旧 v0.5 | `docs/Workstreams/Memory/README.md` |
 | NAV | 导航系统 | typed path、移动结果、玩家传送与关键 Play 回归已完成 | 保持导航边界，后续承接 location candidate planner 与新场景入口配置 | `docs/Workstreams/Navigation/README.md` |
 | NPC | NPC 行为 | 统一任务语义、affordance 与节点检测已落地 | Play 验证新任务链，补营业时间、动态占用与恢复策略 | `docs/Workstreams/NpcBehavior/README.md` |

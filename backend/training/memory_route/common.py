@@ -4,39 +4,13 @@ from __future__ import annotations
 
 import json
 import random
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Iterable
 
 from jsonschema import Draft202012Validator
 
 from backend.src.memory.retrieval_contracts import RetrievalDirection
-
-
-DIRECTION_FIELDS = (
-    "entity_mentions",
-    "location_mentions",
-    "themes",
-    "relation_facets",
-    "time_scope",
-    "source_preferences",
-    "recall_intent",
-    "negative_directions",
-    "retrieval_query",
-    "query_constraints",
-)
-
-SYSTEM_PROMPT = (
-    "你是记忆检索方向解析器。只输出一个 JSON 对象，不输出推理过程、回答、节点 ID 或边 ID。"
-    "字段必须完整且只能是：entity_mentions:string[]，location_mentions:string[]，"
-    "themes:[identity|current_location|recent_activity|relationship|cause|past_event|emotion|object|promise|general]，"
-    "relation_facets:[familiarity|affinity|occupation|shared_event|impression_basis|knowledge_source]，"
-    "time_scope:current|recent|past|any，source_preferences:[direct|heard|inferred]，"
-    "recall_intent:locate_person|identify_entity|explain_cause|compare_relationship|recall_event|continue_reference|general_recall，"
-    "negative_directions:[unrelated_player_background|unrelated_private_memory|stale_location|unrelated_person]，"
-    "retrieval_query:string，query_constraints:[person_location|identity|relationship|cause|past_event|recent]。"
-    "不得引入输入中不存在的人物、地点、时间或事件。"
-)
+from backend.src.memory.route_specialist_contract import DIRECTION_FIELDS, SYSTEM_PROMPT, SpecialistRouteCodec, direction_from_payload, direction_to_payload
 
 
 def load_schema(schema_path: Path) -> dict[str, Any]:
@@ -72,18 +46,6 @@ def append_jsonl(path: Path, record: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8", newline="\n") as handle:
         handle.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
-
-
-def direction_from_payload(payload: dict[str, Any]) -> RetrievalDirection:
-    """只从正式白名单字段构建 RetrievalDirection。"""
-    values = {field: payload[field] for field in DIRECTION_FIELDS if field in payload}
-    return RetrievalDirection(**values)
-
-
-def direction_to_payload(direction: RetrievalDirection) -> dict[str, Any]:
-    """把正式 RetrievalDirection 转为稳定训练标签。"""
-    values = asdict(direction)
-    return {field: values[field] for field in DIRECTION_FIELDS}
 
 
 def validate_records(records: list[dict[str, Any]], schema: dict[str, Any], require_approved: bool) -> None:
@@ -140,8 +102,7 @@ def assign_grouped_splits(
 
 def build_training_text(tokenizer: Any, record: dict[str, Any]) -> tuple[str, str]:
     """构建关闭 thinking 的 prompt 和仅含 assistant 标签的完整文本。"""
-    user_payload = json.dumps(record["input"], ensure_ascii=False, separators=(",", ":"))
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user_payload}]
+    messages = SpecialistRouteCodec.messages(record["input"])
     prompt = tokenizer.apply_chat_template(
         messages,
         tokenize=False,

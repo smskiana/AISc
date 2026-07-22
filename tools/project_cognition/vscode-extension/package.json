@@ -1,0 +1,43 @@
+{
+  "name": "aisc-project-cognition-vscode",
+  "displayName": "AISc Project Cognition",
+  "description": "Browse and update bounded project cognition through the MCP server.",
+  "version": "0.1.0",
+  "publisher": "aisc-local",
+  "files": ["dist/**", "resources/**"],
+  "engines": { "vscode": "^1.95.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onView:projectCognition.domains", "onCommand:projectCognition.findSymbol", "onCommand:projectCognition.updateCurrent"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "projectCognition.refresh", "title": "Project Cognition: Refresh" },
+      { "command": "projectCognition.findSymbol", "title": "Project Cognition: Find Symbol" },
+      { "command": "projectCognition.openSymbol", "title": "Project Cognition: Open Symbol" },
+      { "command": "projectCognition.showRelations", "title": "Project Cognition: Show Relations" },
+      { "command": "projectCognition.updateCurrent", "title": "Project Cognition: Update Current Context" },
+      { "command": "projectCognition.fullUpdate", "title": "Project Cognition: Request Full Update" }
+    ],
+    "viewsContainers": { "activitybar": [{ "id": "projectCognition", "title": "Project Cognition", "icon": "resources/cognition.svg" }] },
+    "views": { "projectCognition": [{ "id": "projectCognition.domains", "name": "Functional Domains" }] },
+    "menus": {
+      "view/title": [
+        { "command": "projectCognition.refresh", "when": "view == projectCognition.domains", "group": "navigation" },
+        { "command": "projectCognition.findSymbol", "when": "view == projectCognition.domains", "group": "navigation" }
+      ],
+      "editor/title": [{ "command": "projectCognition.updateCurrent", "group": "navigation" }],
+      "view/item/context": [
+        { "command": "projectCognition.showRelations", "when": "view == projectCognition.domains", "group": "inline" },
+        { "command": "projectCognition.openSymbol", "when": "viewItem == projectCognition.symbol", "group": "inline" }
+      ]
+    },
+    "configuration": { "title": "Project Cognition", "properties": {
+      "projectCognition.serverCommand": { "type": "string", "default": "node", "description": "MCP server command." },
+      "projectCognition.serverArgs": { "type": "array", "items": { "type": "string" }, "default": ["${workspaceFolder}/tools/project_cognition/dist/src/server.js"], "description": "MCP server arguments." },
+      "projectCognition.projectId": { "type": "string", "default": "AISc" }
+    }}
+  },
+  "scripts": { "build": "tsc -p tsconfig.json", "package": "npm run build && vsce package --no-dependencies" },
+  "dependencies": { "@modelcontextprotocol/sdk": "^1.29.0" },
+  "devDependencies": { "@types/node": "^24.0.0", "@types/vscode": "^1.95.0", "@vscode/vsce": "^3.6.0", "typescript": "^5.9.0" }
+}

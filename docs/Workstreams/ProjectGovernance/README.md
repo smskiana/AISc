@@ -17,6 +17,7 @@
 9. Unity 运行时功能的 AI 调试优先使用项目专用 `aisc_debug`；修改功能时必须同步评估、补齐并验证对应诊断钩子，未同步完成不得视为交付完成。
 10. 已触发 plan 的复杂修改分为执行案、执行记录、测试记录三个独立会话；execution 只表示实现完成并通过最低门禁，独立 test 通过后才表示整体完成。
 11. 测试工具按 `docs/Workstreams/TestingAndDiagnostics/README.md` 分级发现；顶层规则不复制具体工具参数和 action 清单。
+12. 项目认知 MCP 与 IDE 适配已拆分到 `docs/Workstreams/ProjectCognition/README.md`，本 Workstream 只维护其索引和治理边界。
 
 ## 已完成阶段
 

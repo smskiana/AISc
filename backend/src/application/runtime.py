@@ -16,6 +16,8 @@ from ..memory.manager import MemoryManager
 from ..memory.midnight_coordinator import MidnightCoordinator
 from ..memory.player_events import PlayerEventMemoryWriter
 from ..memory.retrieval import init_retrieval
+from ..memory.retrieval_policy import RetrievalPolicyRegistry
+from ..memory.route_specialist_provider import DirectionProviderRuntime
 from ..npc.behavior_engine import BehaviorEngine
 from ..npc.npc_dialogue import NpcDialogueManager
 from ..npc.player_impression_refresh import PlayerImpressionRefresher
@@ -51,6 +53,7 @@ class GameRuntime:
         self.social_decisions: NpcSocialDecisionService | None = None
         self.schedule_snapshots = ScheduleWorldSnapshotStore()
         self.new_game_backend_purge: NewGameBackendPurgeService | None = None
+        self.direction_provider_runtime: DirectionProviderRuntime | None = None
 
     def require_services(self) -> AppServices:
         if self.services is None:
@@ -89,7 +92,9 @@ class GameRuntime:
         prompt_builder = PromptBuilder(sqlite, str(cfg_module.CONFIG_DIR / "npc_profiles"))
         prompt_builder.set_state_manager(state_mgr)
         mem_mgr = MemoryManager(sqlite, vector_store)
-        retrieval = init_retrieval(sqlite, vector_store, clarity_recover=mem_mgr.recover_clarity)
+        retrieval_policy = RetrievalPolicyRegistry()
+        self.direction_provider_runtime = DirectionProviderRuntime(retrieval_policy)
+        retrieval = init_retrieval(sqlite, vector_store, clarity_recover=mem_mgr.recover_clarity, direction_provider_runtime=self.direction_provider_runtime)
         state_mgr.set_retrieval(retrieval)
         prompt_builder.set_retrieval(retrieval)
         logger.info("图检索就绪")
@@ -166,6 +171,7 @@ class GameRuntime:
             behavior=behavior,
             run_midnight_maintenance=self._run_midnight_maintenance,
         )
+        self._start_background_task(self._warmup_direction_providers())
 
         logger.info(f"REST http://{cfg_module.config.host}:{cfg_module.config.rest_port}")
         logger.info(f"WS   ws://{cfg_module.config.host}:{cfg_module.config.rest_port}/ws")
@@ -177,7 +183,17 @@ class GameRuntime:
         if self._background_tasks:
             await asyncio.gather(*self._background_tasks, return_exceptions=True)
         self._background_tasks.clear()
+        if self.direction_provider_runtime is not None:
+            await asyncio.to_thread(self.direction_provider_runtime.close)
         logger.info("=== 樱桥通后端关闭 ===")
+
+    async def _warmup_direction_providers(self) -> None:
+        """在不阻塞后端 READY 的后台线程预热专项方向 worker。"""
+        runtime = self.direction_provider_runtime
+        if runtime is None:
+            return
+        statuses = await asyncio.to_thread(runtime.warmup)
+        logger.info("方向 provider 预热结束: %s", statuses)
 
     async def _run_midnight_maintenance(self, game_day: int):
         """执行不含协议终态的午夜记忆与天气维护阶段。"""
@@ -580,6 +596,7 @@ class GameRuntime:
             services.sqlite,
             vector_store,
             clarity_recover=services.mem_mgr.recover_clarity,
+            direction_provider_runtime=self.direction_provider_runtime,
         )
         services.state_mgr.set_retrieval(services.retrieval)
         services.prompt_builder.set_retrieval(services.retrieval)

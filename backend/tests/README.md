@@ -21,3 +21,5 @@
 3. 多日跑测、性能、真实 LLM 调优和离线检索评估使用 `backend/scripts/README.md` 中的专用脚本，不塞进普通单测。
 
 记忆检索快速门禁覆盖 policy、方向校准、检索 query、最终原子条目、固定起点和本地/完全 LLM 深搜；`backend/scripts/evaluate_deep_retrieval.py` 用离线固定图在 30 秒内评估九种 mode / strategy 组合，并输出 query 来源、单次向量次数、最终评分分量、淘汰原因和字符量。
+
+R3 v2 运行时独立验收使用 `route_runtime_isolated_factory.py` 与 `fixtures/route_runtime_corpus.jsonl`。factory 每次创建 OS 临时目录中的真实 SQLite/LanceDB，并按显式 provider 构造正式 runtime；禁止把它改为连接正式数据或把 fake probe 结果作为检索级证据。

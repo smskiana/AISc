@@ -13,6 +13,7 @@
 3. 融合模型输出必须结构化、可校验、可拒绝和可追溯。
 4. 模型失败或结果不可信时跳过本次融合，绝不以自由文本 fallback 强行提交。
 5. Python 验证通过后，再冻结契约迁移 C#，不在 C# 阶段重新定义融合语义。
+6. 首轮默认使用与 R3 v2 相同的冻结 `Qwen3-0.6B` 底模，通过独立 Merge Adapter 接入共享本地专项模型 runtime，不重复常驻第二份底模。
 
 ## 3. 非目标
 
@@ -63,12 +64,14 @@
 
 | 角色 | 候选 | 用途 |
 |---|---|---|
-| 首选专项模型 | `Qwen3-1.7B` + Merge LoRA | 事实保持、冲突识别、受控改写 |
-| 尺寸对照 | `Qwen3-0.6B` + Merge LoRA | 判断更低资源模型是否足够 |
+| 首选专项模型 | `Qwen3-0.6B` + Merge LoRA | 与 R3 v2 共享冻结底模，只增加独立 Merge Adapter |
+| 扩容备选 | `Qwen3-1.7B` + Merge LoRA | 仅在 0.6B 无法通过融合质量硬门禁时评估，不作为首轮常驻方案 |
 | 现状基线 | 当前通用 LLM `memory_merge` | 教师和质量对照 |
 | 安全基线 | 直接跳过融合 | 零模型风险和故障回退 |
 
-融合任务首轮只做监督微调。若专项模型仍存在系统性事实污染，应先改数据和输出契约，不用偏好训练掩盖接口问题。
+容量选择依据：本机 RTX 4060 Laptop GPU 为 8GB，R3 v2 的 NF4 独立推理峰值已实测为约 `959.1 MiB`。0.6B Merge Adapter 共享同一底模时不重复常驻第二份底模权重，只增加 Adapter、任务上下文和切换开销，容量满足首轮部署；最终仍须在 Unity 实际运行条件下验证驱动占用、KV cache 和显存碎片余量。证据见 `docs/AIChanges/Memory/2026-07-20_记忆路由专项模型部署与训练_execution.md`。
+
+融合任务首轮只对 0.6B 做监督微调。若 0.6B 仍存在系统性事实污染，应先改数据和输出契约，不用偏好训练掩盖接口问题；只有确认问题来自模型容量而不是数据、schema 或 validator 后，才允许启动 1.7B 对照。
 
 ## 7. 稳定输入契约
 
@@ -210,13 +213,16 @@ merge_provider: specialist_python
 failure_policy: skip
 shadow_provider: general_llm
 specialist:
-  model_id: qwen3_1_7b_merge
+  runtime_id: qwen3_0_6b_shared
+  adapter: memory_merge
   schema_version: 1
   confidence_threshold: 0.90
   timeout_ms: 3000
 ```
 
 与路由不同，融合失败不应自动调用通用 LLM 并提交结果。默认 `failure_policy` 必须是 `skip`，因为融合属于不可逆的持久数据演化，错误输出会污染后续检索和存档。
+
+共享 runtime 只共享底模权重、tokenizer、量化环境和 worker 生命周期。Route Adapter、Merge Adapter、输入 codec、JSON Schema、校准/validator、指标和失败策略必须保持独立。
 
 ## 12. Python 验证数据
 
@@ -252,8 +258,8 @@ specialist:
 | M0 | 当前通用 LLM | 现有 Prompt |
 | M1 | Qwen3-0.6B | zero-shot / few-shot |
 | M2 | Qwen3-0.6B | Merge LoRA SFT |
-| M3 | Qwen3-1.7B | Merge LoRA SFT |
-| M4 | 禁用模型 | 全部 skip 安全基线 |
+| M3 | 禁用模型 | 全部 skip 安全基线 |
+| M4 | Qwen3-1.7B | 仅当 M2 因模型表达容量不足未通过质量门禁时追加的扩容对照 |
 
 统一使用确定性或近确定性解码。现有 `temperature=0.5` 不应机械迁移到专项模型；融合专项模型第一版建议 `temperature=0`，通过训练样本表达模式差异。
 
@@ -356,24 +362,33 @@ merge_commit_failed
 
 ## 18. 与路由专项模型的关系
 
-首轮保持独立：
+首轮共享底模 runtime，但保持任务 Adapter 独立：
 
 ```text
-Qwen3-0.6B + Route LoRA
-Qwen3-1.7B + Merge LoRA
+Shared Qwen3-0.6B NF4 base + frozen tokenizer/revision
+  -> Route Adapter: R3 v2
+  -> Merge Adapter: 独立 Merge LoRA
 ```
 
-独立实验通过后，可测试：
+运行约束：
+
+1. 底模只常驻一份；两个 Adapter 可以同时注册，但同一时刻只激活一个。
+2. route 与 merge 请求在 worker 内串行，单在途请求、队列有界；午夜融合不得与玩家路由并发争用 GPU。
+3. 切换 Adapter 不重载底模，不改变 tokenizer、NF4、底模 revision 或 worker 进程。
+4. route 失败沿自身 provider chain 回退；merge 失败固定 `skip`，不得因共享 runtime 混用失败策略。
+5. Merge Adapter、codec 或 validator 失败不得污染 R3 v2 Adapter 状态；worker 崩溃时 route 回退本地、merge 跳过，随后统一有界重启。
+
+共享底模不等于共享 Adapter。只有两个独立 Adapter 均通过后，才可另行测试：
 
 ```text
-Qwen3-1.7B + Multitask LoRA
+Qwen3-0.6B + Multitask LoRA
 ```
 
 多任务实验要求：
 
 1. 使用显式任务标记和不同 JSON Schema。
 2. 路由与融合分别统计指标，不用平均分掩盖融合安全回退。
-3. 两个任务均达到独立 Adapter 指标的 `97%` 以上，且融合全部硬门禁不回退时，才考虑统一。
+3. 两个任务均达到独立 Adapter 指标的 `97%` 以上，且融合全部硬门禁不回退时，才考虑统一 Adapter。
 4. 若共享 Adapter 导致事实污染，即使节省内存也不得采用。
 
 ## 19. 实施边界与类减重
@@ -391,12 +406,13 @@ Qwen3-1.7B + Multitask LoRA
 
 进入实际实施 plan 前，至少应确认：
 
-1. 首轮底模、许可证、训练框架和可分发性。
+1. 首轮底模固定为与 R3 v2 相同的 `Qwen3-0.6B` revision、tokenizer 和 NF4 口径，许可证、训练框架和可分发性继续沿用已冻结证据。
 2. `semantic_merge` / `confusion_merge` 金标规则。
 3. 事实安全人工复核流程和困难负样本来源。
 4. shadow 模式不写数据库、不影响抽签和正式结果。
 5. 失败时 `skip` 的产品语义可接受。
 6. 与概率化节点融合草案的排期关系和前置条件仍成立。
+7. 共享 runtime 在 Unity 实际运行条件下完成 Route/ Merge Adapter 串行切换、显存峰值、无底模重复加载和故障隔离验证。
 
 ## 21. 相关入口
 
@@ -406,4 +422,3 @@ Qwen3-1.7B + Multitask LoRA
 4. `backend/src/memory/embedding.py`
 5. `backend/src/database/sqlite_client.py`
 6. `memory_merge_sources`
-

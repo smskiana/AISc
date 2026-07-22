@@ -20,6 +20,7 @@
 | 功能域 | 当前口径 | 代码 / 资产入口 | 历史证据 |
 |--------|----------|-----------------|----------|
 | 项目治理 | `docs/Workstreams/ProjectGovernance/README.md` | `AGENTS.md`、`docs/DesignDocs/ProjectNamingAndIndexing.md` | `docs/AIChanges/ProjectGovernance/README.md` |
+| 项目认知工具 | `docs/Workstreams/ProjectCognition/README.md` | `tools/project_cognition/README.md` | `docs/AIChanges/ProjectCognition/README.md` |
 | 记忆系统 | `docs/Workstreams/Memory/README.md` | `backend/src/memory/README.md` | `docs/AIChanges/Memory/README.md` |
 | 导航系统 | `docs/Workstreams/Navigation/README.md` | `Assets/Scripts/Navigation/README.md`、`Assets/Scripts/UI/README.md` | `docs/AIChanges/Navigation/README.md` |
 | NPC 行为 | `docs/Workstreams/NpcBehavior/README.md` | `backend/src/npc/README.md`、`Assets/Scripts/NPC/README.md` | `docs/AIChanges/NpcBehavior/README.md` |

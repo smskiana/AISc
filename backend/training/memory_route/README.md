@@ -4,6 +4,8 @@
 
 本目录只负责 `Qwen/Qwen3-0.6B + Route LoRA` 的离线数据契约、采集、训练和评估。它不注册正式 provider，不修改 `memory_retrieval.yaml`，不启动 shadow，也不把模型、数据或 checkpoint 放入仓库。
 
+方向字段、R3 v2 system prompt、紧凑 schema v1 messages 和方向序列化的权威位于 `backend/src/memory/route_specialist_contract.py`；本目录只通过 `common.py` 窄 re-export 复用，生产代码不得反向依赖训练目录。训练与运行时统一以 `enable_thinking=False` 构造 chat template。
+
 大体积产物统一写到 `F:/AIScLocalArtifacts/memory-route/`。训练环境位于 `C:/Users/HP/.cache/AISc/memory-route/venv`；这是首次 smoke 已建立的例外，后续模型与实验产物不再写 C 盘。
 
 ## 固定入口

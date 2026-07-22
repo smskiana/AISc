@@ -1,7 +1,13 @@
-version: 1
+version: 2
+direction_providers:
+  default_chain: [local]
+  providers:
+    general_llm: {kind: general_llm}
+    local: {kind: local}
 modes:
   player_dialogue:
-    strategy: llm_guided_local
+    strategy: local_only
+    direction_chain: [local]
     context: {recent_turn_limit: 8, recent_memory_limit: 4, memory_summary_chars: 80, conversation_summary_chars: 800, max_direction_context_chars: 3000}
     local_search: {max_depth: 7, beam_width: 8, max_neighbors_per_node: 12, max_expanded_edges: 64, max_anchor_count: 4, max_answer_candidates: 12, min_path_score: 0.25, early_stop_margin: 0.18}
     llm_route: {max_hops: 7, max_frontier_nodes: 8, max_neighbors_per_node: 12, max_candidate_edges: 8, selected_edges_per_hop: 3, max_llm_route_calls: 7, candidate_summary_chars: 96, max_route_prompt_chars: 5000}
@@ -10,6 +16,7 @@ modes:
     final_scoring: {query_semantic_similarity: 0.42, graph_path_relevance: 0.25, explicit_entity_alignment: 0.12, recency: 0.08, importance: 0.08, node_type_prior: 0.05}
   npc_dialogue:
     strategy: local_only
+    direction_chain: [local]
     context: {recent_turn_limit: 4, recent_memory_limit: 2, memory_summary_chars: 64, conversation_summary_chars: 400, max_direction_context_chars: 2000}
     local_search: {max_depth: 5, beam_width: 4, max_neighbors_per_node: 8, max_expanded_edges: 32, max_anchor_count: 2, max_answer_candidates: 6, min_path_score: 0.30, early_stop_margin: 0.22}
     llm_route: {max_hops: 5, max_frontier_nodes: 4, max_neighbors_per_node: 8, max_candidate_edges: 6, selected_edges_per_hop: 2, max_llm_route_calls: 5, candidate_summary_chars: 72, max_route_prompt_chars: 3500}
@@ -18,6 +25,7 @@ modes:
     final_scoring: {query_semantic_similarity: 0.42, graph_path_relevance: 0.25, explicit_entity_alignment: 0.12, recency: 0.08, importance: 0.08, node_type_prior: 0.05}
   nightly_impression:
     strategy: local_only
+    direction_chain: [local]
     context: {recent_turn_limit: 4, recent_memory_limit: 10, memory_summary_chars: 120, conversation_summary_chars: 400, max_direction_context_chars: 6000}
     local_search: {max_depth: 8, beam_width: 12, max_neighbors_per_node: 16, max_expanded_edges: 48, max_anchor_count: 6, max_answer_candidates: 20, min_path_score: 0.18, early_stop_margin: 0.12}
     llm_route: {max_hops: 7, max_frontier_nodes: 12, max_neighbors_per_node: 20, max_candidate_edges: 12, selected_edges_per_hop: 4, max_llm_route_calls: 7, candidate_summary_chars: 128, max_route_prompt_chars: 8000}

@@ -7,7 +7,7 @@
 ## 文件夹内容
 
 - `ChangeIndex.md`: 功能目录总路由。
-- 八个功能目录：保存对应系统的 plan / execution / test。
+- 按 `ChangeIndex.md` 路由的功能目录：保存对应系统的 plan / execution / test。
 - `Archive/Handoffs/`: 保存历史会话交接。
 - `artifacts/`: 保存日志、数据库、摘要和隔离产物。
 

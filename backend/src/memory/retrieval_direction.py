@@ -82,6 +82,7 @@ class DirectionResolver:
             validation_errors=[*result.validation_errors, *errors],
             calibrations=calibrations,
             llm_output_summary=result.llm_output_summary,
+            provider_diagnostics=result.provider_diagnostics,
         )
 
     def build_context(self, request: RetrievalRequest, limits: Any, recent_memories: list[str]) -> dict[str, Any]:

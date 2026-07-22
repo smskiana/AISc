@@ -254,6 +254,14 @@ class ConversationMemoryRoutingTests(unittest.TestCase):
         self.assertEqual(result.retrieved_node_ids, ["chihaya"])
         self.assertIn("千早是谁？", result.vector_query_preview)
         self.assertIn("你认识千早吗？", result.vector_query_preview)
+        self.assertEqual(result.diagnostics["strategy"], "local_only")
+        self.assertEqual(result.diagnostics["direction_source"], "local")
+        self.assertEqual(result.diagnostics["direction_provider_requested"], "not_applicable")
+        self.assertEqual(result.diagnostics["direction_provider_adopted"], "not_applicable")
+        self.assertEqual(result.diagnostics["direction_provider_chain"], [])
+        self.assertEqual(result.diagnostics["direction_model_call_count"], 0)
+        self.assertEqual(result.diagnostics["llm_direction_calls"], 0)
+        self.assertEqual(result.diagnostics["llm_route_calls"], 0)
 
     def test_named_person_question_beats_high_clarity_player_background_edges(self) -> None:
         """明确点名千早时，本地图候选排序应选中千早关系边。"""

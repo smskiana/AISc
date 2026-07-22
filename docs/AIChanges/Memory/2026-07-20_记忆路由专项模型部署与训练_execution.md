@@ -137,13 +137,15 @@
 4. 新建项目外组合 corpus `F:/AIScLocalArtifacts/memory-route/datasets/route_r3_v2_approved_480.jsonl`，SHA-256 为 `0f79f9dc5c1dc56fd4254b8f64a93e149a0f3aa113ad9555651cba645c0bf905`。它原样组合旧 96 条与第二批 384 条 approved 数据，共 480 条，train / validation / test 为 382 / 46 / 52，全部 `review.status=approved`。
 5. 正式 schema、枚举、稳定 ID 泄漏和 `require_approved=True` 门禁通过；旧批 48 个与第二批 192 个 `source_group` 交叉为 0，`sample_id` 交叉为 0。旧 96 条中的 12 条 test 保持原 split，未进入训练；其稳定 JSON canonical SHA-256 为 `259b27598e802521f39ebc5ab445538069e6cab555211b1e9b000c5018e5ab4c`。
 6. R3 v2 使用与 v1 相同的冻结底模 revision、NF4、seed 20260720、max length 768、micro batch 1、gradient accumulation 8、learning rate 2e-4、3 epochs 和 LoRA 16 / 32 / 0.05；未使用审核绕过。新产物目录为 `F:/AIScLocalArtifacts/memory-route/artifacts/route-lora-r3-v2-approved-480/`，保留 checkpoint-48 / 96 / 144、最终 Adapter 和 manifest。
-7. 训练完成 144 steps，总 train loss 0.1603，最终 validation loss 0.1062，耗时约 840.8 秒，峰值显存 2132.0 MB，manifest 记录 `review_bypass: false`。R3 v2 Adapter SHA-256 为 `cd2676f7f64f28a351fb35b2d2d76fa01b30662a509bf7bbdcced6f9cf92b8d`。
+7. 训练完成 144 steps，总 train loss 0.1603，最终 validation loss 0.1062，耗时约 840.8 秒，峰值显存 2132.0 MB，manifest 记录 `review_bypass: false`。R3 v2 Adapter SHA-256 为 `cd2676f7f64f28a351fb35b2d2d76fa01b30662a509bf7bbddcced6f9cf92b8d`。
 8. R3 v1 Adapter 在训练前后 SHA-256 均为 `6b420cf869b8c666e79455156fda59a6a62b357db7da86051a5f0d07b0902f1e`，旧 Adapter、checkpoint 和首轮报告均未覆盖。v1 重跑报告为 `route-lora-r3-v1-frozen-test-rerun.json`，v2 报告为 `route-lora-r3-v2-frozen-test.json`。
 9. 相同冻结 test 上，v1 / v2 的 schema 合法率均为 1.0、明确实体召回率均为 1.0、未知实体均为 0；聚合字段准确率由 0.7083 提升到 0.8083。p50 由 11138.018 ms 降至 10847.326 ms，p95 / p99 由 12466.220 ms 降至 11671.412 ms；峰值显存均为 959.1 MB。
 10. v2 字段准确率为：`entity_mentions=1.0`、`location_mentions=0.75`、`themes=0.6667`、`relation_facets=0.8333`、`time_scope=1.0`、`source_preferences=0.8333`、`recall_intent=0.9167`、`negative_directions=0.8333`、`retrieval_query=0.4167`、`query_constraints=0.8333`。相比 v1，地点、query、约束和来源偏好改善，但 `themes` 下降 0.25、`recall_intent` 下降 0.0833，且 2 条样本总字段命中回退。
 11. 统一对比报告为 `F:/AIScLocalArtifacts/memory-route/artifacts/route-lora-r3-v1-v2-frozen-test-comparison.json`，SHA-256 为 `521213cb8d610f28f66ffa2ca96dc1f3b147430fa1c8818bdf96c30ffc047ccc`。报告中的 `retrieval_hit_rate=0` 仍因冻结合成 test 没有 `expected_node_ids` 且未提供 engine factory，不能解释为检索通过或失败。
 12. 本轮结论仅为“R3 v2 离线训练和实现期最低门禁完成，待独立测试”。v2 改善主要弱字段但存在局部回退，是否达到后续候选资格必须在新的独立测试任务中判定；本执行会话到最低门禁后停止。
 13. 实现期最低门禁：训练 venv 对 `common.py`、`train_route_lora.py`、`evaluate_route_specialist.py` 执行 `py_compile` 通过；设置仓库根 `PYTHONPATH` 后执行 `pytest backend/tests/test_memory_route_training_contract.py -q` 为 12 passed；`git diff --check` 通过。首次直接调用全局 pytest 因环境未包含仓库根而在收集期报 `ModuleNotFoundError: backend`，补齐项目启动环境后通过，未涉及代码修复或测试重试掩盖。
+
+2026-07-21 文档勘误：本节原记录的 R3 v2 Adapter SHA-256 在 `509bf7bbdcced` 片段少抄一个 `d`，形成 63 位文本；已按批准产物重新计算并更正为上述 64 位值。本勘误只修正资产身份记录，不改变训练过程、指标或当时结论。
 
 ## 16. R3 v3 本地脱敏纠错候选
 
@@ -183,7 +185,7 @@
 4. 两批 corpus 的 `sample_id` 和 `source_group` 交叉均为 0；正式 schema、枚举、稳定 ID 泄漏、分组无交叉和 `require_approved=True` 门禁通过。原 96 条 corpus 中的 12 条冻结 test 在组合 corpus 中逐对象一致且仍全部保持 `split=test`，未进入训练或验证。
 5. R3 v3 沿用 v1/v2 的冻结底模 revision、NF4、seed 20260720、max length 768、micro batch 1、gradient accumulation 8、learning rate 2e-4、3 epochs 和 LoRA 16 / 32 / 0.05，未使用审核绕过。新产物目录为 `F:/AIScLocalArtifacts/memory-route/artifacts/route-lora-r3-v3-approved-640/`，保留 checkpoint-64 / 128 / 192、最终 Adapter 和 manifest。
 6. 训练完成 192 steps，总 train loss 0.1504，最终 validation loss 0.09641，耗时 1779.98 秒，峰值显存 2131.3 MB；manifest 记录 `review_bypass: false`。R3 v3 Adapter SHA-256 为 `2fda5b0f3061dae1e591b92fc03063ea09fd0089ad0e7239bedb7a116b62961b`。
-7. R3 v1 / v2 Adapter 训练前后 SHA-256 仍分别为 `6b420cf869b8c666e79455156fda59a6a62b357db7da86051a5f0d07b0902f1e` 和 `cd2676f7f64f28a351fb35b2d2d76fa01b30662a509bf7bbdcced6f9cf92b8d`；旧 Adapter、checkpoint 和报告未被覆盖。
+7. R3 v1 / v2 Adapter 训练前后 SHA-256 仍分别为 `6b420cf869b8c666e79455156fda59a6a62b357db7da86051a5f0d07b0902f1e` 和 `cd2676f7f64f28a351fb35b2d2d76fa01b30662a509bf7bbddcced6f9cf92b8d`；旧 Adapter、checkpoint 和报告未被覆盖。
 8. R3 v3 在原 12 条冻结 test 上的报告为 `F:/AIScLocalArtifacts/memory-route/artifacts/route-lora-r3-v3-frozen12.json`，SHA-256 为 `b2e74e86d6b636d1d5bf3e5e68a0afc90fd80070cf946d088a5c2c8d049f60ee`。schema 合法率 1.0、明确实体召回率 1.0、聚合字段准确率 0.8083、未知实体 0，与 R3 v2 的总体质量指标持平。
 9. R3 v3 逐字段准确率为：`entity_mentions=1.0`、`location_mentions=0.75`、`themes=0.75`、`relation_facets=0.8333`、`time_scope=1.0`、`source_preferences=0.8333`、`recall_intent=1.0`、`negative_directions=0.75`、`retrieval_query=0.25`、`query_constraints=0.9167`。相比 v2，`themes`、`recall_intent` 和 `query_constraints` 各提升 0.0833，`negative_directions` 下降 0.0833，`retrieval_query` 下降 0.1667，净准确率无改善。
 10. 三方统一报告为 `F:/AIScLocalArtifacts/memory-route/artifacts/longcat-vs-r3-v2-v3-frozen12-comparison.json`，SHA-256 为 `c8eb98a398f531be22d64820bed11c8adb2605f0d5f7197276aad194e8bb6452`。LongCat-2.0 API 基线复用独立测试任务对这 12 个完全相同 `sample_id` 已保存的原始响应和正式校准结果，未重复付费调用；其 schema 合法率 1.0、实体召回率 1.0、字段准确率 0.4917、未知实体 3。R3 v2/v3 字段准确率均高 0.3167，未知实体均少 3。

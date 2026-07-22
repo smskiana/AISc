@@ -50,6 +50,7 @@ venv/
 # Local temp / tool state
 tmp_test_logs/
 .codebase-memory/
+.project-cognition/
 
 # Public repository exclusions
 # Personal resumes contain contact details and must never enter repository history.
